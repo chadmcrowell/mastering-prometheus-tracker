@@ -74,6 +74,17 @@ derived from constants, not hardcoded per-card.
   environment variables, and `supabase/schema.sql` to have been run against the Supabase project — see
   `README.md`. Without them, account sync fails silently (logged to the browser console) and the app falls
   back to `localStorage`-only, per-browser progress.
+  - `SUPABASE_SERVICE_ROLE_KEY` must be Supabase's **secret** key (labeled "Secret key" in newer Supabase
+    projects, "service_role" in older ones) — never the anon/public/"Publishable key". Since
+    `reading_progress` has RLS enabled with no policies, using the wrong key doesn't fail loudly at
+    startup; every request 500s with `"new row violates row-level security policy for table
+    \"reading_progress\""`, because only a service-role connection bypasses RLS.
+  - Netlify Functions only pick up environment variable changes on their **next deploy** — saving a new
+    value in the Netlify UI does not affect already-deployed function instances. After changing an env var,
+    trigger a redeploy (e.g. `git commit --allow-empty -m "..." && git push`) before retesting.
 - To verify a deploy went live, check for updated markup at the production URL (e.g. `curl -s
   https://mastering-prometheus-tracker.netlify.app/ | grep <marker>`) rather than assuming the push
-  succeeded — Netlify build/publish is asynchronous relative to `git push`.
+  succeeded — Netlify build/publish is asynchronous relative to `git push`. The same applies to the
+  Function: `curl -s https://mastering-prometheus-tracker.netlify.app/.netlify/functions/progress` should
+  return `{"error":"Not authenticated"}` (401) once it's live and reachable — a bare `curl` request has no
+  Identity JWT, so this doesn't confirm Supabase connectivity itself, only that the deploy succeeded.
