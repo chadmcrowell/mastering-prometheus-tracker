@@ -4,6 +4,18 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <script>
+    (function() {
+      try {
+        var saved = window.localStorage && window.localStorage.getItem('mp-theme');
+        if (saved === 'light' || saved === 'dark') {
+          document.documentElement.setAttribute('data-theme', saved);
+        }
+      } catch (e) {
+        // ignore
+      }
+    })();
+  </script>
   <title>Mastering Prometheus Reading Tracker</title>
   <link rel="icon" type="image/jpeg" href="mastering-prometheus-cover.jpg" media="(prefers-color-scheme: dark)" />
   <link rel="icon" type="image/png" href="favicon-light.png" media="(prefers-color-scheme: light)" />
@@ -49,8 +61,11 @@
       --shadow-lg: 0 12px 32px rgba(0,0,0,0.12);
     }
 
+    /* Dark palette applies when the system prefers dark (unless the user has
+       explicitly picked light via the toggle), or whenever the user has
+       explicitly picked dark regardless of system preference. */
     @media (prefers-color-scheme: dark) {
-      :root {
+      :root:not([data-theme="light"]) {
         --color-bg: #15181a;
         --color-surface: #1c2023;
         --color-surface-2: #22262a;
@@ -72,9 +87,63 @@
         --shadow-lg: 0 12px 32px rgba(0,0,0,0.55);
       }
 
-      body {
+      html:not([data-theme="light"]) body {
         background: radial-gradient(circle at top left, #1f2427 0, #15181a 40%, #101214 100%);
       }
+    }
+
+    :root[data-theme="dark"] {
+      --color-bg: #15181a;
+      --color-surface: #1c2023;
+      --color-surface-2: #22262a;
+      --color-surface-offset: #2a2f33;
+      --color-divider: #33383c;
+      --color-border: #3a4045;
+      --color-text: #e8e6e1;
+      --color-text-muted: #9a9994;
+      --color-text-faint: #6b6a66;
+      --color-text-inverse: #15181a;
+
+      --color-primary: #2bb0b6;
+      --color-primary-hover: #3fc4ca;
+      --color-primary-active: #1f8f94;
+      --color-primary-highlight: #173537;
+
+      --shadow-sm: 0 1px 2px rgba(0,0,0,0.35);
+      --shadow-md: 0 4px 12px rgba(0,0,0,0.45);
+      --shadow-lg: 0 12px 32px rgba(0,0,0,0.55);
+    }
+
+    [data-theme="dark"] body {
+      background: radial-gradient(circle at top left, #1f2427 0, #15181a 40%, #101214 100%);
+    }
+
+    .theme-toggle {
+      flex-shrink: 0;
+      width: 36px;
+      height: 36px;
+      border-radius: var(--radius-full);
+      border: 1px solid var(--color-border);
+      background: var(--color-surface-2);
+      box-shadow: var(--shadow-sm);
+      font-size: 1rem;
+      line-height: 1;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      transition: background var(--transition-interactive), transform var(--transition-interactive);
+    }
+
+    .theme-toggle:hover {
+      background: var(--color-surface-offset);
+      transform: translateY(-1px);
+    }
+
+    .auth-screen-top {
+      display: flex;
+      justify-content: flex-end;
+      margin-bottom: var(--space-4);
     }
 
     *, *::before, *::after {
@@ -469,6 +538,9 @@
 </head>
 <body>
   <section class="auth-screen" id="authScreen" aria-label="Sign in">
+    <div class="auth-screen-top">
+      <button class="theme-toggle" id="themeToggleAuth" type="button" aria-label="Switch to dark mode">🌙</button>
+    </div>
     <h1>Mastering Prometheus</h1>
     <p class="subtitle">Sign in to track your reading progress</p>
     <div class="auth-actions">
@@ -490,6 +562,7 @@
         </div>
       </div>
       <div class="total-progress">
+        <button class="theme-toggle" id="themeToggleApp" type="button" aria-label="Switch to dark mode">🌙</button>
         <p class="meta" id="days-label">Day 1 of 15</p>
         <div class="user-info">
           <span class="user-email" id="userEmail"></span>
@@ -821,6 +894,48 @@
       const signupBtn = document.getElementById('signupBtn');
       const logoutBtn = document.getElementById('logoutBtn');
       const userEmailLabel = document.getElementById('userEmail');
+      const themeToggles = [
+        document.getElementById('themeToggleAuth'),
+        document.getElementById('themeToggleApp'),
+      ];
+
+      const prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)');
+
+      function isDarkActive() {
+        const explicit = document.documentElement.getAttribute('data-theme');
+        if (explicit === 'dark') return true;
+        if (explicit === 'light') return false;
+        return !!(prefersDark && prefersDark.matches);
+      }
+
+      function updateThemeToggleUI() {
+        const dark = isDarkActive();
+        themeToggles.forEach((btn) => {
+          btn.textContent = dark ? '☀️' : '🌙';
+          btn.setAttribute('aria-label', dark ? 'Switch to light mode' : 'Switch to dark mode');
+        });
+      }
+
+      function toggleTheme() {
+        const next = isDarkActive() ? 'light' : 'dark';
+        document.documentElement.setAttribute('data-theme', next);
+        try {
+          window.localStorage && window.localStorage.setItem('mp-theme', next);
+        } catch (e) {
+          // ignore
+        }
+        updateThemeToggleUI();
+      }
+
+      themeToggles.forEach((btn) => btn.addEventListener('click', toggleTheme));
+
+      if (prefersDark && prefersDark.addEventListener) {
+        prefersDark.addEventListener('change', () => {
+          if (!document.documentElement.getAttribute('data-theme')) updateThemeToggleUI();
+        });
+      }
+
+      updateThemeToggleUI();
 
       const overallProgress = document.getElementById('overallProgress');
       const progressText = document.getElementById('progressText');
