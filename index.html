@@ -867,25 +867,53 @@
         daysLabel.textContent = `Day ${currentDay} of ${TOTAL_CHAPTERS}`;
       }
 
-      function syncChaptersToAccount() {
+      const PROGRESS_ENDPOINT = '/.netlify/functions/progress';
+
+      async function syncChaptersToAccount() {
         const user = window.netlifyIdentity && netlifyIdentity.currentUser();
         if (!user) return;
-        user.update({ data: { chapters: state.chapters, updatedAt: state.updatedAt } })
-          .catch((err) => console.error('Failed to sync progress to account', err));
+        try {
+          const token = await user.jwt();
+          await fetch(PROGRESS_ENDPOINT, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              Authorization: `Bearer ${token}`,
+            },
+            body: JSON.stringify({ chapters: state.chapters, updatedAt: state.updatedAt }),
+          });
+        } catch (err) {
+          console.error('Failed to sync progress to account', err);
+        }
+      }
+
+      async function fetchRemoteProgress(user) {
+        try {
+          const token = await user.jwt();
+          const res = await fetch(PROGRESS_ENDPOINT, {
+            headers: { Authorization: `Bearer ${token}` },
+          });
+          if (!res.ok) return null;
+          return await res.json();
+        } catch (err) {
+          console.error('Failed to fetch progress from account', err);
+          return null;
+        }
       }
 
       // Reconciles this device's cached progress against the account's saved
-      // progress on login/init. Prefers whichever side has a newer updatedAt;
-      // falls back to "more chapters completed" when timestamps are equal or
-      // missing (e.g. legacy local data from before account sync existed), so a
-      // freshly-opened device with no local progress never clobbers real progress
-      // already saved to the account.
-      function reconcileWithAccount(user) {
-        const metadata = (user && user.user_metadata) || {};
-        const remoteChapters = Array.isArray(metadata.chapters) && metadata.chapters.length === TOTAL_CHAPTERS
-          ? metadata.chapters.map(Boolean)
+      // progress (stored in Supabase via the progress Function) on login/init.
+      // Prefers whichever side has a newer updatedAt; falls back to "more
+      // chapters completed" when timestamps are equal or missing (e.g. legacy
+      // local data from before account sync existed), so a freshly-opened
+      // device with no local progress never clobbers real progress already
+      // saved to the account.
+      async function reconcileWithAccount(user) {
+        const remote = await fetchRemoteProgress(user);
+        const remoteChapters = remote && Array.isArray(remote.chapters) && remote.chapters.length === TOTAL_CHAPTERS
+          ? remote.chapters.map(Boolean)
           : null;
-        const remoteUpdatedAt = typeof metadata.updatedAt === 'number' ? metadata.updatedAt : 0;
+        const remoteUpdatedAt = remote && typeof remote.updatedAt === 'number' ? remote.updatedAt : 0;
 
         if (!remoteChapters) {
           syncChaptersToAccount();
@@ -918,6 +946,7 @@
         authScreen.hidden = true;
         appEl.hidden = false;
         userEmailLabel.textContent = user && user.email ? user.email : '';
+        updateUI();
         reconcileWithAccount(user);
       }
 

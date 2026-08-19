@@ -5,6 +5,9 @@ Thumbs.db
 # Netlify local dev
 .netlify/
 
+# Dependencies (Netlify Function)
+node_modules/
+
 # Env / secrets
 .env
 .env.*
