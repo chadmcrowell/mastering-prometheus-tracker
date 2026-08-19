@@ -781,6 +781,8 @@
   <script>
     (function() {
       const NETLIFY_IDENTITY_API_URL = 'https://mastering-prometheus-tracker.netlify.app/.netlify/identity';
+      const TOTAL_CHAPTERS = 15;
+      const EST_PAGES_PER_CHAPTER = 21;
 
       const authScreen = document.getElementById('authScreen');
       const appEl = document.getElementById('app');
@@ -788,50 +790,6 @@
       const signupBtn = document.getElementById('signupBtn');
       const logoutBtn = document.getElementById('logoutBtn');
       const userEmailLabel = document.getElementById('userEmail');
-
-      function showApp(user) {
-        authScreen.hidden = true;
-        appEl.hidden = false;
-        userEmailLabel.textContent = user && user.email ? user.email : '';
-      }
-
-      function showAuthScreen() {
-        authScreen.hidden = false;
-        appEl.hidden = true;
-      }
-
-      if (window.netlifyIdentity) {
-        netlifyIdentity.init({ APIUrl: NETLIFY_IDENTITY_API_URL });
-
-        netlifyIdentity.on('init', (user) => {
-          if (user) {
-            showApp(user);
-          } else {
-            showAuthScreen();
-          }
-        });
-
-        netlifyIdentity.on('login', (user) => {
-          showApp(user);
-          netlifyIdentity.close();
-        });
-
-        netlifyIdentity.on('logout', () => {
-          showAuthScreen();
-        });
-
-        loginBtn.addEventListener('click', () => netlifyIdentity.open('login'));
-        signupBtn.addEventListener('click', () => netlifyIdentity.open('signup'));
-        logoutBtn.addEventListener('click', () => netlifyIdentity.logout());
-      } else {
-        showAuthScreen();
-      }
-    })();
-
-    (function() {
-      const TOTAL_CHAPTERS = 15;
-      const EST_PAGES_PER_CHAPTER = 21;
-      const TOTAL_PAGES = TOTAL_CHAPTERS * EST_PAGES_PER_CHAPTER;
 
       const overallProgress = document.getElementById('overallProgress');
       const progressText = document.getElementById('progressText');
@@ -841,7 +799,10 @@
 
       const chapterCards = Array.from(document.querySelectorAll('.chapter-card'));
 
-      function loadState() {
+      // Progress is cached in localStorage per-browser, and synced to the logged-in
+      // Netlify Identity user's metadata so it carries across devices. `updatedAt`
+      // lets reconcileWithAccount() tell which copy (local vs. account) is newer.
+      function loadLocalState() {
         try {
           const raw = window.localStorage ? window.localStorage.getItem('mp-reading-progress') : null;
           if (!raw) return {};
@@ -851,7 +812,7 @@
         }
       }
 
-      function saveState(state) {
+      function saveLocalState(state) {
         try {
           if (window.localStorage) {
             window.localStorage.setItem('mp-reading-progress', JSON.stringify(state));
@@ -861,9 +822,16 @@
         }
       }
 
-      const state = loadState();
+      const state = loadLocalState();
       if (!state.chapters) {
         state.chapters = chapterCards.map(() => false);
+      }
+      if (typeof state.updatedAt !== 'number') {
+        state.updatedAt = 0;
+      }
+
+      function countCompleted(chapters) {
+        return chapters.reduce((n, done) => n + (done ? 1 : 0), 0);
       }
 
       function updateUI() {
@@ -899,16 +867,92 @@
         daysLabel.textContent = `Day ${currentDay} of ${TOTAL_CHAPTERS}`;
       }
 
+      function syncChaptersToAccount() {
+        const user = window.netlifyIdentity && netlifyIdentity.currentUser();
+        if (!user) return;
+        user.update({ data: { chapters: state.chapters, updatedAt: state.updatedAt } })
+          .catch((err) => console.error('Failed to sync progress to account', err));
+      }
+
+      // Reconciles this device's cached progress against the account's saved
+      // progress on login/init. Prefers whichever side has a newer updatedAt;
+      // falls back to "more chapters completed" when timestamps are equal or
+      // missing (e.g. legacy local data from before account sync existed), so a
+      // freshly-opened device with no local progress never clobbers real progress
+      // already saved to the account.
+      function reconcileWithAccount(user) {
+        const metadata = (user && user.user_metadata) || {};
+        const remoteChapters = Array.isArray(metadata.chapters) && metadata.chapters.length === TOTAL_CHAPTERS
+          ? metadata.chapters.map(Boolean)
+          : null;
+        const remoteUpdatedAt = typeof metadata.updatedAt === 'number' ? metadata.updatedAt : 0;
+
+        if (!remoteChapters) {
+          syncChaptersToAccount();
+        } else if (
+          remoteUpdatedAt > state.updatedAt ||
+          countCompleted(remoteChapters) > countCompleted(state.chapters)
+        ) {
+          state.chapters = remoteChapters;
+          state.updatedAt = remoteUpdatedAt;
+          saveLocalState(state);
+        } else if (state.updatedAt > remoteUpdatedAt) {
+          syncChaptersToAccount();
+        }
+
+        updateUI();
+      }
+
       chapterCards.forEach((card, index) => {
         const button = card.querySelector('.chapter-button');
         button.addEventListener('click', () => {
           state.chapters[index] = !state.chapters[index];
-          saveState(state);
+          state.updatedAt = Date.now();
+          saveLocalState(state);
           updateUI();
+          syncChaptersToAccount();
         });
       });
 
-      updateUI();
+      function showApp(user) {
+        authScreen.hidden = true;
+        appEl.hidden = false;
+        userEmailLabel.textContent = user && user.email ? user.email : '';
+        reconcileWithAccount(user);
+      }
+
+      function showAuthScreen() {
+        authScreen.hidden = false;
+        appEl.hidden = true;
+      }
+
+      if (window.netlifyIdentity) {
+        netlifyIdentity.init({ APIUrl: NETLIFY_IDENTITY_API_URL });
+
+        netlifyIdentity.on('init', (user) => {
+          if (user) {
+            showApp(user);
+          } else {
+            showAuthScreen();
+          }
+        });
+
+        netlifyIdentity.on('login', (user) => {
+          showApp(user);
+          netlifyIdentity.close();
+        });
+
+        netlifyIdentity.on('logout', () => {
+          showAuthScreen();
+        });
+
+        loginBtn.addEventListener('click', () => netlifyIdentity.open('login'));
+        signupBtn.addEventListener('click', () => netlifyIdentity.open('signup'));
+        logoutBtn.addEventListener('click', () => netlifyIdentity.logout());
+      } else {
+        showAuthScreen();
+        updateUI();
+      }
     })();
   </script>
 </body>
