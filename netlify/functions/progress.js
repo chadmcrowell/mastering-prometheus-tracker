@@ -2,17 +2,17 @@ const { createClient } = require('@supabase/supabase-js');
 
 const TOTAL_CHAPTERS = 15;
 
-const supabase = createClient(
-  process.env.SUPABASE_URL,
-  process.env.SUPABASE_SERVICE_ROLE_KEY
-);
-
 exports.handler = async (event, context) => {
   const user = context.clientContext && context.clientContext.user;
   if (!user) {
     return { statusCode: 401, body: JSON.stringify({ error: 'Not authenticated' }) };
   }
   const userId = user.sub;
+
+  if (!process.env.SUPABASE_URL || !process.env.SUPABASE_SERVICE_ROLE_KEY) {
+    return { statusCode: 500, body: JSON.stringify({ error: 'Supabase is not configured' }) };
+  }
+  const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY);
 
   if (event.httpMethod === 'GET') {
     const { data, error } = await supabase
