@@ -1,6 +1,6 @@
 
 <!DOCTYPE html>
-<html lang="en" data-theme="light">
+<html lang="en">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -47,6 +47,34 @@
       --shadow-sm: 0 1px 2px rgba(0,0,0,0.06);
       --shadow-md: 0 4px 12px rgba(0,0,0,0.08);
       --shadow-lg: 0 12px 32px rgba(0,0,0,0.12);
+    }
+
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --color-bg: #15181a;
+        --color-surface: #1c2023;
+        --color-surface-2: #22262a;
+        --color-surface-offset: #2a2f33;
+        --color-divider: #33383c;
+        --color-border: #3a4045;
+        --color-text: #e8e6e1;
+        --color-text-muted: #9a9994;
+        --color-text-faint: #6b6a66;
+        --color-text-inverse: #15181a;
+
+        --color-primary: #2bb0b6;
+        --color-primary-hover: #3fc4ca;
+        --color-primary-active: #1f8f94;
+        --color-primary-highlight: #173537;
+
+        --shadow-sm: 0 1px 2px rgba(0,0,0,0.35);
+        --shadow-md: 0 4px 12px rgba(0,0,0,0.45);
+        --shadow-lg: 0 12px 32px rgba(0,0,0,0.55);
+      }
+
+      body {
+        background: radial-gradient(circle at top left, #1f2427 0, #15181a 40%, #101214 100%);
+      }
     }
 
     *, *::before, *::after {
