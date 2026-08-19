@@ -942,17 +942,44 @@
         });
       });
 
+      const POLL_INTERVAL_MS = 5000;
+      let pollIntervalId = null;
+
+      // Keeps other logged-in tabs/devices in sync without a manual refresh: polls
+      // the account's saved progress periodically, and immediately on tab refocus
+      // (the common "switched back from my phone" case) rather than waiting for
+      // the next poll tick.
+      function startPolling(user) {
+        stopPolling();
+        pollIntervalId = setInterval(() => reconcileWithAccount(user), POLL_INTERVAL_MS);
+      }
+
+      function stopPolling() {
+        if (pollIntervalId) {
+          clearInterval(pollIntervalId);
+          pollIntervalId = null;
+        }
+      }
+
+      document.addEventListener('visibilitychange', () => {
+        if (document.hidden || appEl.hidden) return;
+        const user = window.netlifyIdentity && netlifyIdentity.currentUser();
+        if (user) reconcileWithAccount(user);
+      });
+
       function showApp(user) {
         authScreen.hidden = true;
         appEl.hidden = false;
         userEmailLabel.textContent = user && user.email ? user.email : '';
         updateUI();
         reconcileWithAccount(user);
+        startPolling(user);
       }
 
       function showAuthScreen() {
         authScreen.hidden = false;
         appEl.hidden = true;
+        stopPolling();
       }
 
       if (window.netlifyIdentity) {
