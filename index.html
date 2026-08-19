@@ -1,0 +1,722 @@
+
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Mastering Prometheus Reading Tracker</title>
+  <style>
+    :root {
+      --space-1: 0.25rem;
+      --space-2: 0.5rem;
+      --space-3: 0.75rem;
+      --space-4: 1rem;
+      --space-5: 1.25rem;
+      --space-6: 1.5rem;
+      --space-8: 2rem;
+      --space-10: 2.5rem;
+      --space-12: 3rem;
+      --space-16: 4rem;
+
+      --radius-sm: 0.375rem;
+      --radius-md: 0.5rem;
+      --radius-lg: 0.75rem;
+      --radius-full: 9999px;
+
+      --transition-interactive: 180ms cubic-bezier(0.16, 1, 0.3, 1);
+
+      --color-bg: #f7f6f2;
+      --color-surface: #f9f8f5;
+      --color-surface-2: #fbfbf9;
+      --color-surface-offset: #f3f0ec;
+      --color-divider: #dcd9d5;
+      --color-border: #d4d1ca;
+      --color-text: #28251d;
+      --color-text-muted: #7a7974;
+      --color-text-faint: #bab9b4;
+      --color-text-inverse: #f9f8f4;
+
+      --color-primary: #01696f;
+      --color-primary-hover: #0c4e54;
+      --color-primary-active: #0f3638;
+      --color-primary-highlight: #cedcd8;
+
+      --shadow-sm: 0 1px 2px rgba(0,0,0,0.06);
+      --shadow-md: 0 4px 12px rgba(0,0,0,0.08);
+      --shadow-lg: 0 12px 32px rgba(0,0,0,0.12);
+    }
+
+    *, *::before, *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    html {
+      text-size-adjust: none;
+      scroll-behavior: smooth;
+    }
+
+    body {
+      min-height: 100vh;
+      line-height: 1.6;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      font-size: 16px;
+      color: var(--color-text);
+      background: radial-gradient(circle at top left, #e6e4df 0, #f7f6f2 40%, #fbfbf9 100%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: var(--space-8);
+    }
+
+    .app {
+      width: 100%;
+      max-width: 720px;
+      background: var(--color-surface);
+      border-radius: var(--radius-lg);
+      box-shadow: var(--shadow-lg);
+      padding: var(--space-6);
+      border: 1px solid var(--color-border);
+    }
+
+    .app-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: var(--space-6);
+    }
+
+    .title-group {
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-1);
+    }
+
+    h1 {
+      font-size: 1.5rem;
+      letter-spacing: 0.02em;
+    }
+
+    .subtitle {
+      font-size: 0.9rem;
+      color: var(--color-text-muted);
+    }
+
+    .meta {
+      font-size: 0.85rem;
+      color: var(--color-text-faint);
+    }
+
+    .progress-summary {
+      margin-bottom: var(--space-6);
+      padding: var(--space-4);
+      background: var(--color-surface-2);
+      border-radius: var(--radius-md);
+      border: 1px solid var(--color-divider);
+      display: grid;
+      grid-template-columns: 2fr 1fr;
+      gap: var(--space-4);
+      align-items: center;
+    }
+
+    .progress-bar {
+      position: relative;
+      width: 100%;
+      height: 16px;
+      background: var(--color-surface-offset);
+      border-radius: var(--radius-full);
+      overflow: hidden;
+      border: 1px solid var(--color-divider);
+    }
+
+    .progress-bar-fill {
+      position: absolute;
+      inset: 0;
+      width: 0;
+      background: linear-gradient(90deg, var(--color-primary), #0b5177);
+      border-radius: var(--radius-full);
+      transition: width var(--transition-interactive);
+    }
+
+    .progress-labels {
+      display: flex;
+      justify-content: space-between;
+      margin-top: var(--space-2);
+      font-size: 0.8rem;
+      color: var(--color-text-muted);
+    }
+
+    .progress-percentage {
+      font-size: 1.2rem;
+      font-weight: 600;
+    }
+
+    .stats-row {
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-1);
+      font-size: 0.9rem;
+    }
+
+    .stats-row span {
+      display: flex;
+      justify-content: space-between;
+    }
+
+    .chapters-list {
+      margin-top: var(--space-4);
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: var(--space-3);
+    }
+
+    @media (max-width: 640px) {
+      .progress-summary {
+        grid-template-columns: 1fr;
+      }
+      .chapters-list {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .chapter-card {
+      padding: var(--space-3);
+      background: var(--color-surface-2);
+      border-radius: var(--radius-md);
+      border: 1px solid var(--color-divider);
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-2);
+    }
+
+    .chapter-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: var(--space-2);
+    }
+
+    .chapter-title {
+      font-size: 0.95rem;
+      font-weight: 600;
+    }
+
+    .chapter-pages {
+      font-size: 0.8rem;
+      color: var(--color-text-muted);
+    }
+
+    .chapter-footer {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: var(--space-2);
+      margin-top: var(--space-2);
+    }
+
+    .chapter-progress-bar {
+      position: relative;
+      flex: 1;
+      height: 8px;
+      background: var(--color-surface-offset);
+      border-radius: var(--radius-full);
+      overflow: hidden;
+    }
+
+    .chapter-progress-fill {
+      position: absolute;
+      inset: 0;
+      width: 0;
+      background: linear-gradient(90deg, var(--color-primary), #5591c7);
+      border-radius: var(--radius-full);
+      transition: width var(--transition-interactive);
+    }
+
+    .chapter-status {
+      font-size: 0.8rem;
+      color: var(--color-text-muted);
+      min-width: 70px;
+      text-align: right;
+    }
+
+    .chapter-status.completed {
+      color: var(--color-primary);
+      font-weight: 600;
+    }
+
+    .chapter-button {
+      padding: 0.4rem 0.9rem;
+      border-radius: var(--radius-full);
+      border: 1px solid var(--color-primary);
+      background: var(--color-primary-highlight);
+      color: var(--color-primary);
+      font-size: 0.8rem;
+      font-weight: 600;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      transition: background var(--transition-interactive),
+                  color var(--transition-interactive),
+                  box-shadow var(--transition-interactive),
+                  transform var(--transition-interactive);
+    }
+
+    .chapter-button:hover {
+      background: var(--color-primary);
+      color: var(--color-text-inverse);
+      box-shadow: var(--shadow-sm);
+      transform: translateY(-1px);
+    }
+
+    .chapter-button:active {
+      transform: translateY(0);
+      background: var(--color-primary-active);
+      color: var(--color-text-inverse);
+    }
+
+    .chapter-button.completed {
+      border-color: var(--color-text-muted);
+      background: var(--color-surface-offset);
+      color: var(--color-text-muted);
+    }
+
+    .chapter-button .check {
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      border: 2px solid var(--color-primary);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .chapter-button.completed .check {
+      background: var(--color-primary);
+      border-color: var(--color-primary);
+    }
+
+    .chapter-button .check svg {
+      width: 10px;
+      height: 10px;
+      color: var(--color-text-inverse);
+    }
+
+    .footer-note {
+      margin-top: var(--space-4);
+      font-size: 0.8rem;
+      color: var(--color-text-muted);
+      text-align: center;
+    }
+  </style>
+</head>
+<body>
+  <main class="app" aria-label="Mastering Prometheus reading tracker">
+    <header class="app-header">
+      <div class="title-group">
+        <h1>Mastering Prometheus</h1>
+        <p class="subtitle">Chapter-per-day reading tracker</p>
+        <p class="meta">15 chapters · ~310 pages · target: finish in 15 days</p>
+      </div>
+      <div class="total-progress">
+        <p class="meta" id="days-label">Day 1 of 15</p>
+      </div>
+    </header>
+
+    <section class="progress-summary" aria-label="Overall progress">
+      <div>
+        <div class="progress-bar" aria-hidden="true">
+          <div class="progress-bar-fill" id="overallProgress"></div>
+        </div>
+        <div class="progress-labels">
+          <span id="progressText">0/15 chapters</span>
+          <span>Goal: 1 chapter/day</span>
+        </div>
+      </div>
+      <div class="stats-row" aria-label="Stats">
+        <span><strong>Estimated pages:</strong> <span>310 total · ~21 per chapter</span></span>
+        <span><strong>Completed pages:</strong> <span id="pagesCompleted">0</span></span>
+        <span><strong>Completion:</strong> <span class="progress-percentage" id="percentageLabel">0%</span></span>
+      </div>
+    </section>
+
+    <section class="chapters-list" aria-label="Chapters">
+      <!-- 15 chapter cards -->
+
+      <div class="chapter-card" data-pages="21">
+        <div class="chapter-header">
+          <div>
+            <p class="chapter-title">Chapter 1: Foundations</p>
+            <p class="chapter-pages">Pages: ~21</p>
+          </div>
+        </div>
+        <div class="chapter-footer">
+          <button class="chapter-button" type="button" aria-label="Mark chapter 1 as completed">
+            <span class="check" aria-hidden="true"></span>
+            <span>Mark done</span>
+          </button>
+          <div class="chapter-progress-bar" aria-hidden="true">
+            <div class="chapter-progress-fill"></div>
+          </div>
+          <span class="chapter-status">Not started</span>
+        </div>
+      </div>
+
+      <div class="chapter-card" data-pages="21">
+        <div class="chapter-header">
+          <div>
+            <p class="chapter-title">Chapter 2: Deploying Prometheus</p>
+            <p class="chapter-pages">Pages: ~21</p>
+          </div>
+        </div>
+        <div class="chapter-footer">
+          <button class="chapter-button" type="button" aria-label="Mark chapter 2 as completed">
+            <span class="check" aria-hidden="true"></span>
+            <span>Mark done</span>
+          </button>
+          <div class="chapter-progress-bar" aria-hidden="true">
+            <div class="chapter-progress-fill"></div>
+          </div>
+          <span class="chapter-status">Not started</span>
+        </div>
+      </div>
+
+      <div class="chapter-card" data-pages="21">
+        <div class="chapter-header">
+          <div>
+            <p class="chapter-title">Chapter 3: Data Model & PromQL</p>
+            <p class="chapter-pages">Pages: ~21</p>
+          </div>
+        </div>
+        <div class="chapter-footer">
+          <button class="chapter-button" type="button" aria-label="Mark chapter 3 as completed">
+            <span class="check" aria-hidden="true"></span>
+            <span>Mark done</span>
+          </button>
+          <div class="chapter-progress-bar" aria-hidden="true">
+            <div class="chapter-progress-fill"></div>
+          </div>
+          <span class="chapter-status">Not started</span>
+        </div>
+      </div>
+
+      <div class="chapter-card" data-pages="21">
+        <div class="chapter-header">
+          <div>
+            <p class="chapter-title">Chapter 4: Service Discovery</p>
+            <p class="chapter-pages">Pages: ~21</p>
+          </div>
+        </div>
+        <div class="chapter-footer">
+          <button class="chapter-button" type="button" aria-label="Mark chapter 4 as completed">
+            <span class="check" aria-hidden="true"></span>
+            <span>Mark done</span>
+          </button>
+          <div class="chapter-progress-bar" aria-hidden="true">
+            <div class="chapter-progress-fill"></div>
+          </div>
+          <span class="chapter-status">Not started</span>
+        </div>
+      </div>
+
+      <div class="chapter-card" data-pages="21">
+        <div class="chapter-header">
+          <div>
+            <p class="chapter-title">Chapter 5: Alerting & Alertmanager</p>
+            <p class="chapter-pages">Pages: ~21</p>
+          </div>
+        </div>
+        <div class="chapter-footer">
+          <button class="chapter-button" type="button" aria-label="Mark chapter 5 as completed">
+            <span class="check" aria-hidden="true"></span>
+            <span>Mark done</span>
+          </button>
+          <div class="chapter-progress-bar" aria-hidden="true">
+            <div class="chapter-progress-fill"></div>
+          </div>
+          <span class="chapter-status">Not started</span>
+        </div>
+      </div>
+
+      <div class="chapter-card" data-pages="21">
+        <div class="chapter-header">
+          <div>
+            <p class="chapter-title">Chapter 6: Advanced PromQL</p>
+            <p class="chapter-pages">Pages: ~21</p>
+          </div>
+        </div>
+        <div class="chapter-footer">
+          <button class="chapter-button" type="button" aria-label="Mark chapter 6 as completed">
+            <span class="check" aria-hidden="true"></span>
+            <span>Mark done</span>
+          </button>
+          <div class="chapter-progress-bar" aria-hidden="true">
+            <div class="chapter-progress-fill"></div>
+          </div>
+          <span class="chapter-status">Not started</span>
+        </div>
+      </div>
+
+      <div class="chapter-card" data-pages="21">
+        <div class="chapter-header">
+          <div>
+            <p class="chapter-title">Chapter 7: Custom Service Discovery</p>
+            <p class="chapter-pages">Pages: ~21</p>
+          </div>
+        </div>
+        <div class="chapter-footer">
+          <button class="chapter-button" type="button" aria-label="Mark chapter 7 as completed">
+            <span class="check" aria-hidden="true"></span>
+            <span>Mark done</span>
+          </button>
+          <div class="chapter-progress-bar" aria-hidden="true">
+            <div class="chapter-progress-fill"></div>
+          </div>
+          <span class="chapter-status">Not started</span>
+        </div>
+      </div>
+
+      <div class="chapter-card" data-pages="21">
+        <div class="chapter-header">
+          <div>
+            <p class="chapter-title">Chapter 8: Scaling Prometheus</p>
+            <p class="chapter-pages">Pages: ~21</p>
+          </div>
+        </div>
+        <div class="chapter-footer">
+          <button class="chapter-button" type="button" aria-label="Mark chapter 8 as completed">
+            <span class="check" aria-hidden="true"></span>
+            <span>Mark done</span>
+          </button>
+          <div class="chapter-progress-bar" aria-hidden="true">
+            <div class="chapter-progress-fill"></div>
+          </div>
+          <span class="chapter-status">Not started</span>
+        </div>
+      </div>
+
+      <div class="chapter-card" data-pages="21">
+        <div class="chapter-header">
+          <div>
+            <p class="chapter-title">Chapter 9: Thanos & High Availability</p>
+            <p class="chapter-pages">Pages: ~21</p>
+          </div>
+        </div>
+        <div class="chapter-footer">
+          <button class="chapter-button" type="button" aria-label="Mark chapter 9 as completed">
+            <span class="check" aria-hidden="true"></span>
+            <span>Mark done</span>
+          </button>
+          <div class="chapter-progress-bar" aria-hidden="true">
+            <div class="chapter-progress-fill"></div>
+          </div>
+          <span class="chapter-status">Not started</span>
+        </div>
+      </div>
+
+      <div class="chapter-card" data-pages="21">
+        <div class="chapter-header">
+          <div>
+            <p class="chapter-title">Chapter 10: VictoriaMetrics</p>
+            <p class="chapter-pages">Pages: ~21</p>
+          </div>
+        </div>
+        <div class="chapter-footer">
+          <button class="chapter-button" type="button" aria-label="Mark chapter 10 as completed">
+            <span class="check" aria-hidden="true"></span>
+            <span>Mark done</span>
+          </button>
+          <div class="chapter-progress-bar" aria-hidden="true">
+            <div class="chapter-progress-fill"></div>
+          </div>
+          <span class="chapter-status">Not started</span>
+        </div>
+      </div>
+
+      <div class="chapter-card" data-pages="21">
+        <div class="chapter-header">
+          <div>
+            <p class="chapter-title">Chapter 11: Grafana Mimir</p>
+            <p class="chapter-pages">Pages: ~21</p>
+          </div>
+        </div>
+        <div class="chapter-footer">
+          <button class="chapter-button" type="button" aria-label="Mark chapter 11 as completed">
+            <span class="check" aria-hidden="true"></span>
+            <span>Mark done</span>
+          </button>
+          <div class="chapter-progress-bar" aria-hidden="true">
+            <div class="chapter-progress-fill"></div>
+          </div>
+          <span class="chapter-status">Not started</span>
+        </div>
+      </div>
+
+      <div class="chapter-card" data-pages="21">
+        <div class="chapter-header">
+          <div>
+            <p class="chapter-title">Chapter 12: OpenTelemetry</p>
+            <p class="chapter-pages">Pages: ~21</p>
+          </div>
+        </div>
+        <div class="chapter-footer">
+          <button class="chapter-button" type="button" aria-label="Mark chapter 12 as completed">
+            <span class="check" aria-hidden="true"></span>
+            <span>Mark done</span>
+          </button>
+          <div class="chapter-progress-bar" aria-hidden="true">
+            <div class="chapter-progress-fill"></div>
+          </div>
+          <span class="chapter-status">Not started</span>
+        </div>
+      </div>
+
+      <div class="chapter-card" data-pages="21">
+        <div class="chapter-header">
+          <div>
+            <p class="chapter-title">Chapter 13: SLO-Based Alerting</p>
+            <p class="chapter-pages">Pages: ~21</p>
+          </div>
+        </div>
+        <div class="chapter-footer">
+          <button class="chapter-button" type="button" aria-label="Mark chapter 13 as completed">
+            <span class="check" aria-hidden="true"></span>
+            <span>Mark done</span>
+          </button>
+          <div class="chapter-progress-bar" aria-hidden="true">
+            <div class="chapter-progress-fill"></div>
+          </div>
+          <span class="chapter-status">Not started</span>
+        </div>
+      </div>
+
+      <div class="chapter-card" data-pages="21">
+        <div class="chapter-header">
+          <div>
+            <p class="chapter-title">Chapter 14: Performance & Debugging</p>
+            <p class="chapter-pages">Pages: ~21</p>
+          </div>
+        </div>
+        <div class="chapter-footer">
+          <button class="chapter-button" type="button" aria-label="Mark chapter 14 as completed">
+            <span class="check" aria-hidden="true"></span>
+            <span>Mark done</span>
+          </button>
+          <div class="chapter-progress-bar" aria-hidden="true">
+            <div class="chapter-progress-fill"></div>
+          </div>
+          <span class="chapter-status">Not started</span>
+        </div>
+      </div>
+
+      <div class="chapter-card" data-pages="21">
+        <div class="chapter-header">
+          <div>
+            <p class="chapter-title">Chapter 15: Beyond Prometheus</p>
+            <p class="chapter-pages">Pages: ~21</p>
+          </div>
+        </div>
+        <div class="chapter-footer">
+          <button class="chapter-button" type="button" aria-label="Mark chapter 15 as completed">
+            <span class="check" aria-hidden="true"></span>
+            <span>Mark done</span>
+          </button>
+          <div class="chapter-progress-bar" aria-hidden="true">
+            <div class="chapter-progress-fill"></div>
+          </div>
+          <span class="chapter-status">Not started</span>
+        </div>
+      </div>
+
+    </section>
+
+    <p class="footer-note">Tip: aim for one chapter per day. If you miss a day, just catch up by completing two chapters on the next.</p>
+  </main>
+
+  <script>
+    (function() {
+      const TOTAL_CHAPTERS = 15;
+      const EST_PAGES_PER_CHAPTER = 21;
+      const TOTAL_PAGES = TOTAL_CHAPTERS * EST_PAGES_PER_CHAPTER;
+
+      const overallProgress = document.getElementById('overallProgress');
+      const progressText = document.getElementById('progressText');
+      const percentageLabel = document.getElementById('percentageLabel');
+      const pagesCompletedLabel = document.getElementById('pagesCompleted');
+      const daysLabel = document.getElementById('days-label');
+
+      const chapterCards = Array.from(document.querySelectorAll('.chapter-card'));
+
+      function loadState() {
+        try {
+          const raw = window.localStorage ? window.localStorage.getItem('mp-reading-progress') : null;
+          if (!raw) return {};
+          return JSON.parse(raw) || {};
+        } catch (e) {
+          return {};
+        }
+      }
+
+      function saveState(state) {
+        try {
+          if (window.localStorage) {
+            window.localStorage.setItem('mp-reading-progress', JSON.stringify(state));
+          }
+        } catch (e) {
+          // ignore
+        }
+      }
+
+      const state = loadState();
+      if (!state.chapters) {
+        state.chapters = chapterCards.map(() => false);
+      }
+
+      function updateUI() {
+        let completedChapters = 0;
+        let completedPages = 0;
+
+        chapterCards.forEach((card, index) => {
+          const completed = !!state.chapters[index];
+          const button = card.querySelector('.chapter-button');
+          const status = card.querySelector('.chapter-status');
+          const barFill = card.querySelector('.chapter-progress-fill');
+          const pages = Number(card.dataset.pages) || EST_PAGES_PER_CHAPTER;
+
+          if (completed) {
+            completedChapters += 1;
+            completedPages += pages;
+          }
+
+          button.classList.toggle('completed', completed);
+          button.querySelector('span:nth-child(2)').textContent = completed ? 'Completed' : 'Mark done';
+          status.textContent = completed ? 'Completed' : 'Not started';
+          status.classList.toggle('completed', completed);
+          barFill.style.width = completed ? '100%' : '0%';
+        });
+
+        const percentage = Math.round((completedChapters / TOTAL_CHAPTERS) * 100);
+        overallProgress.style.width = percentage + '%';
+        progressText.textContent = `${completedChapters}/${TOTAL_CHAPTERS} chapters`;
+        percentageLabel.textContent = `${percentage}%`;
+        pagesCompletedLabel.textContent = completedPages;
+
+        const currentDay = Math.min(completedChapters + 1, TOTAL_CHAPTERS);
+        daysLabel.textContent = `Day ${currentDay} of ${TOTAL_CHAPTERS}`;
+      }
+
+      chapterCards.forEach((card, index) => {
+        const button = card.querySelector('.chapter-button');
+        button.addEventListener('click', () => {
+          state.chapters[index] = !state.chapters[index];
+          saveState(state);
+          updateUI();
+        });
+      });
+
+      updateUI();
+    })();
+  </script>
+</body>
+</html>
