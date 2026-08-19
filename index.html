@@ -201,6 +201,27 @@
       .chapters-list {
         grid-template-columns: 1fr;
       }
+      .app-header {
+        flex-wrap: wrap;
+        row-gap: var(--space-3);
+      }
+      .book-cover {
+        width: 56px;
+      }
+      .total-progress {
+        align-items: flex-start;
+        width: 100%;
+      }
+      .user-info {
+        width: 100%;
+        justify-content: space-between;
+      }
+      .user-email {
+        min-width: 0;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
     }
 
     .chapter-card {
@@ -400,6 +421,8 @@
       font-size: 0.75rem;
       font-weight: 600;
       cursor: pointer;
+      white-space: nowrap;
+      flex-shrink: 0;
       transition: background var(--transition-interactive), color var(--transition-interactive);
     }
 
