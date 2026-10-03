@@ -1,6 +1,7 @@
 const { createClient } = require('@supabase/supabase-js');
 
 const TOTAL_CHAPTERS = 15;
+const MAX_DISPLAY_NAME_LENGTH = 40;
 
 exports.handler = async (event, context) => {
   const user = context.clientContext && context.clientContext.user;
@@ -54,9 +55,20 @@ exports.handler = async (event, context) => {
       return { statusCode: 400, body: JSON.stringify({ error: 'Invalid payload' }) };
     }
 
+    // Shown on the leaderboard (never the email). Comes from the JWT, not the
+    // request body, so users can't set someone else's name through this endpoint.
+    const fullName = user.user_metadata && user.user_metadata.full_name;
+    const displayName =
+      typeof fullName === 'string' && fullName.trim()
+        ? fullName.trim().slice(0, MAX_DISPLAY_NAME_LENGTH)
+        : null;
+
     const { error } = await supabase
       .from('reading_progress')
-      .upsert({ user_id: userId, chapters, updated_at: updatedAt }, { onConflict: 'user_id' });
+      .upsert(
+        { user_id: userId, chapters, updated_at: updatedAt, display_name: displayName },
+        { onConflict: 'user_id' }
+      );
 
     if (error) {
       return { statusCode: 500, body: JSON.stringify({ error: error.message }) };

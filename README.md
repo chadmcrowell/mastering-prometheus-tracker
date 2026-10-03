@@ -16,6 +16,7 @@ Supabase-backed account so it follows you across devices/browsers.
 - Optional login (email/password, via Netlify Identity) syncs progress to an account across devices, with
   automatic reconciliation between local and remote state (newest `updatedAt` wins).
 - Cross-tab/cross-device sync without a manual refresh.
+- Reader leaderboard (logged-in users only) ranked by chapters completed — see [`LEADERBOARD.md`](LEADERBOARD.md).
 - Light/dark theme, both automatic (`prefers-color-scheme`) and manually toggleable.
 
 ## Tech stack
@@ -24,7 +25,8 @@ Supabase-backed account so it follows you across devices/browsers.
   step.
 - **Auth**: [Netlify Identity](https://docs.netlify.com/manage/security/security-scanning/netlify-identity/)
   (email/password).
-- **Backend**: one Netlify Function (`netlify/functions/progress.js`) that reads/writes progress.
+- **Backend**: two Netlify Functions — `progress.js` reads/writes a user's progress, `leaderboard.js`
+  returns the rankings.
 - **Database**: [Supabase](https://supabase.com/) (Postgres), accessed only from the Function via the
   service role key.
 
@@ -33,8 +35,11 @@ Supabase-backed account so it follows you across devices/browsers.
 ```text
 index.html                      # entire frontend: markup, styles, and app logic
 netlify/functions/progress.js   # GET/POST endpoint for reading/writing a user's progress
+netlify/functions/leaderboard.js # GET endpoint returning the leaderboard (logged-in users only)
 supabase/schema.sql             # reading_progress table + RLS setup, run once per Supabase project
-netlify.toml                    # points Netlify at netlify/functions for Functions bundling
+supabase/migrations/           # incremental schema changes, run in order after schema.sql
+netlify.toml                    # Functions directory + /leaderboard rewrite to index.html
+LEADERBOARD.md                  # leaderboard ranking rules, data model, cohort reset
 package.json                    # @supabase/supabase-js dependency, used only by the Function
 mastering-prometheus-cover.jpg  # book cover, also reused as the favicon source
 favicon-light.png               # light-mode favicon variant
@@ -85,6 +90,8 @@ project and environment variables.
 2. Bump `TOTAL_CHAPTERS` in **both** `index.html`'s script and `netlify/functions/progress.js` —
    `TOTAL_CHAPTERS` gates payload validation in the Function, so a mismatch makes every `POST` fail with a
    400.
+3. Update the two database check constraints that hard-code the chapter count — see
+   [`LEADERBOARD.md`](LEADERBOARD.md#changing-the-number-of-chapters).
 
 Chapter count, per-chapter page estimates, and total pages are otherwise derived from these constants, not
 hardcoded per card.
@@ -95,7 +102,8 @@ Reading progress is stored in Supabase, per Netlify Identity user, via the `prog
 To enable it on a deploy:
 
 1. Create a Supabase project.
-2. Run `supabase/schema.sql` in the Supabase SQL editor to create the `reading_progress` table.
+2. Run `supabase/schema.sql` in the Supabase SQL editor to create the `reading_progress` table, then each
+   file in `supabase/migrations/` in order (currently just `001_leaderboard.sql`, for the leaderboard).
 3. In the Netlify site's dashboard, set these environment variables:
    - `SUPABASE_URL` — the project's API URL.
    - `SUPABASE_SERVICE_ROLE_KEY` — the project's **secret**/**service_role** key (labeled "Secret key" in
@@ -132,8 +140,9 @@ rather than assuming the push succeeded:
 # Frontend: look for updated markup at the production URL
 curl -s https://mastering-prometheus-tracker.netlify.app/ | grep <marker>
 
-# Function: should return 401 with this body once the deploy is live and reachable
+# Functions: each should return 401 with this body once the deploy is live and reachable
 curl -s https://mastering-prometheus-tracker.netlify.app/.netlify/functions/progress
+curl -s https://mastering-prometheus-tracker.netlify.app/.netlify/functions/leaderboard
 # {"error":"Not authenticated"}
 ```
 
