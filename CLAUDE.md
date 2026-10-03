@@ -6,7 +6,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 A single-page reading tracker for the book *Mastering Prometheus*. The frontend — markup, styles, and
 logic — lives in one file, `index.html`, with no framework and no client-side build step. Reading progress
-is synced per-user to Supabase through a single Netlify Function (`netlify/functions/progress.js`).
+is synced per-user to Supabase through a Netlify Function (`netlify/functions/progress.js`); a second
+Function (`netlify/functions/leaderboard.js`) serves a logged-in-only reader leaderboard (see `LEADERBOARD.md`).
 
 ## Commands
 
@@ -30,9 +31,12 @@ To work on the Function: `npm install` (pulls in `@supabase/supabase-js` per `pa
 
 1. **`<style>`** — all CSS, using custom properties defined on `:root` (spacing scale, colors, radii). No
    external stylesheet or framework.
-2. **Markup** — two top-level sections inside `<body>`: `#authScreen` (login/signup buttons) and `#app`
-   (the tracker itself, initially `hidden`). Exactly one is visible at a time, toggled via the `hidden`
-   attribute — see `[hidden] { display: none !important; }`.
+2. **Markup** — two top-level sections inside `<body>`: `#authScreen` (login/signup buttons, plus a
+   leaderboard teaser) and `#app` (initially `hidden`). Exactly one is visible at a time, toggled via the
+   `hidden` attribute — see `[hidden] { display: none !important; }`. Inside `#app`, `#trackerView` and
+   `#leaderboardView` are likewise toggled by the `.view-tab` links, driven by `location.pathname`
+   (`/` vs `/leaderboard`, rewritten to `index.html` in `netlify.toml`) via `history.pushState`. Asset
+   URLs are root-absolute so they resolve under `/leaderboard`.
 3. **A single IIFE at the bottom of the file** that owns both auth and tracker state (they're coupled —
    login/logout drives which screen is visible, and login drives loading/saving progress — so they live in
    one scope rather than two isolated IIFEs):
@@ -49,7 +53,7 @@ To work on the Function: `npm install` (pulls in `@supabase/supabase-js` per `pa
      freshly-opened device never clobbers real progress already saved to the account). Every chapter toggle
      saves locally and then POSTs the new state to the Function.
 
-**Backend**: `netlify/functions/progress.js` is the only server-side code. It reads the caller's identity
+**Backend**: `netlify/functions/progress.js` handles progress sync. It reads the caller's identity
 from `context.clientContext.user` (populated by Netlify's Functions runtime from the Identity JWT sent as
 `Authorization: Bearer <token>` — no manual JWT verification needed), keyed by `user.sub`. `GET` returns
 `{ chapters, updatedAt }` for that user from the `reading_progress` table in Supabase; `POST` upserts it.
@@ -57,11 +61,19 @@ It talks to Supabase with the **service role key** (env var `SUPABASE_SERVICE_RO
 RLS — `supabase/schema.sql` enables RLS on `reading_progress` with no policies, so the table is otherwise
 unreachable from the anon/public key. There is no client-side Supabase access at all.
 
+`netlify/functions/leaderboard.js` (GET, auth required) reads the `leaderboard` view defined in
+`supabase/migrations/001_leaderboard.sql`. That migration adds a trigger on `reading_progress` that keeps
+`chapter_completions` in sync with the `chapters` array, timestamped by the DB clock — ranking never uses
+the client-supplied `updated_at`. `progress.js` also writes `display_name` from the JWT's
+`user_metadata.full_name`, so the migration must be applied before deploying. The leaderboard response
+never includes emails or user ids, and display names are rendered with `textContent` (user-controlled).
+
 Adding a chapter means: add a `.chapter-card` block in the markup (following the existing pattern, with
 `data-pages` set) and bump `TOTAL_CHAPTERS` in both `index.html`'s script and
 `netlify/functions/progress.js` (`TOTAL_CHAPTERS` gates payload validation there — a mismatch makes `POST`
-reject every request with a 400). Chapter count, per-chapter page estimate, and total pages are otherwise
-derived from constants, not hardcoded per-card.
+reject every request with a 400), and update the chapter-count check constraints in `supabase/schema.sql`
+and `supabase/migrations/001_leaderboard.sql` via a new migration. Chapter count, per-chapter page
+estimate, and total pages are otherwise derived from constants, not hardcoded per-card.
 
 ## Deployment
 

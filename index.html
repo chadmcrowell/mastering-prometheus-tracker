@@ -17,9 +17,9 @@
     })();
   </script>
   <title>Mastering Prometheus Reading Tracker</title>
-  <link rel="icon" type="image/jpeg" href="mastering-prometheus-cover.jpg" media="(prefers-color-scheme: dark)" />
-  <link rel="icon" type="image/png" href="favicon-light.png" media="(prefers-color-scheme: light)" />
-  <link rel="icon" type="image/jpeg" href="mastering-prometheus-cover.jpg" />
+  <link rel="icon" type="image/jpeg" href="/mastering-prometheus-cover.jpg" media="(prefers-color-scheme: dark)" />
+  <link rel="icon" type="image/png" href="/favicon-light.png" media="(prefers-color-scheme: light)" />
+  <link rel="icon" type="image/jpeg" href="/mastering-prometheus-cover.jpg" />
   <style>
     :root {
       --space-1: 0.25rem;
@@ -531,6 +531,142 @@
       color: var(--color-text);
     }
 
+    .auth-teaser {
+      margin-top: var(--space-6);
+      padding: var(--space-3) var(--space-4);
+      background: var(--color-surface-2);
+      border: 1px solid var(--color-divider);
+      border-radius: var(--radius-md);
+      font-size: 0.85rem;
+      color: var(--color-text-muted);
+      text-align: left;
+    }
+
+    .auth-teaser strong {
+      display: block;
+      color: var(--color-text);
+    }
+
+    .view-tabs {
+      display: flex;
+      gap: var(--space-2);
+      margin-bottom: var(--space-6);
+      border-bottom: 1px solid var(--color-divider);
+    }
+
+    .view-tab {
+      padding: var(--space-2) var(--space-3);
+      margin-bottom: -1px;
+      border-bottom: 2px solid transparent;
+      color: var(--color-text-muted);
+      font-size: 0.9rem;
+      font-weight: 600;
+      text-decoration: none;
+      transition: color var(--transition-interactive), border-color var(--transition-interactive);
+    }
+
+    .view-tab:hover {
+      color: var(--color-text);
+    }
+
+    .view-tab[aria-current="page"] {
+      color: var(--color-primary);
+      border-bottom-color: var(--color-primary);
+    }
+
+    .leaderboard-intro {
+      margin-bottom: var(--space-4);
+    }
+
+    .leaderboard-intro h2 {
+      font-size: 1.1rem;
+    }
+
+    .leaderboard-status {
+      padding: var(--space-4);
+      font-size: 0.9rem;
+      color: var(--color-text-muted);
+      text-align: center;
+    }
+
+    .leaderboard-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.9rem;
+    }
+
+    .leaderboard-table th {
+      padding: var(--space-2) var(--space-3);
+      font-size: 0.75rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      color: var(--color-text-muted);
+      text-align: left;
+      border-bottom: 1px solid var(--color-divider);
+    }
+
+    .leaderboard-table td {
+      padding: var(--space-2) var(--space-3);
+      border-bottom: 1px solid var(--color-divider);
+    }
+
+    .leaderboard-table .col-rank {
+      width: 3.5rem;
+      font-weight: 600;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .leaderboard-table .col-chapters,
+    .leaderboard-table .col-reached {
+      text-align: right;
+      white-space: nowrap;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .leaderboard-table .col-reached {
+      color: var(--color-text-muted);
+    }
+
+    .leaderboard-table .col-name {
+      max-width: 0;
+      width: 100%;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .leaderboard-table tr.is-me td {
+      background: var(--color-primary-highlight);
+    }
+
+    .leaderboard-table tr.is-me .col-name {
+      font-weight: 600;
+    }
+
+    .leaderboard-table tr.gap td {
+      padding: var(--space-1) var(--space-3);
+      color: var(--color-text-faint);
+      text-align: center;
+    }
+
+    .you-badge {
+      margin-left: var(--space-2);
+      font-size: 0.75rem;
+      font-weight: 600;
+      color: var(--color-primary);
+    }
+
+    @media (max-width: 640px) {
+      .leaderboard-table th,
+      .leaderboard-table td {
+        padding: var(--space-2);
+      }
+      .leaderboard-table .col-rank {
+        width: 2.5rem;
+      }
+    }
+
     [hidden] {
       display: none !important;
     }
@@ -547,13 +683,17 @@
       <button class="auth-button" type="button" id="loginBtn">Log in</button>
       <button class="auth-button secondary" type="button" id="signupBtn">Sign up</button>
     </div>
+    <p class="auth-teaser">
+      <strong>🏆 Reader leaderboard</strong>
+      Log in to see how your progress stacks up against other readers — ranked by chapters completed.
+    </p>
   </section>
 
   <main class="app" aria-label="Mastering Prometheus reading tracker" id="app" hidden>
     <header class="app-header">
       <div class="title-group">
         <a href="https://www.packtpub.com/en-us/product/mastering-prometheus-9781805125327" target="_blank" rel="noopener noreferrer">
-          <img class="book-cover" src="mastering-prometheus-cover.jpg" alt="Mastering Prometheus book cover — view on Packt" />
+          <img class="book-cover" src="/mastering-prometheus-cover.jpg" alt="Mastering Prometheus book cover — view on Packt" />
         </a>
         <div class="title-text">
           <h1>Mastering Prometheus</h1>
@@ -571,6 +711,12 @@
       </div>
     </header>
 
+    <nav class="view-tabs" aria-label="Views">
+      <a class="view-tab" href="/" data-view="tracker">Tracker</a>
+      <a class="view-tab" href="/leaderboard" data-view="leaderboard">Leaderboard</a>
+    </nav>
+
+    <div id="trackerView">
     <section class="progress-summary" aria-label="Overall progress">
       <div>
         <div class="progress-bar" aria-hidden="true">
@@ -879,6 +1025,26 @@
     </section>
 
     <p class="footer-note">Tip: aim for one chapter per day. If you miss a day, just catch up by completing two chapters on the next.</p>
+    </div>
+
+    <section id="leaderboardView" aria-label="Leaderboard" hidden>
+      <div class="leaderboard-intro">
+        <h2>Leaderboard</h2>
+        <p class="meta">Ranked by chapters completed · ties go to whoever got there first</p>
+      </div>
+      <p class="leaderboard-status" id="leaderboardStatus">Loading…</p>
+      <table class="leaderboard-table" id="leaderboardTable" hidden>
+        <thead>
+          <tr>
+            <th class="col-rank" scope="col">#</th>
+            <th class="col-name" scope="col">Reader</th>
+            <th class="col-chapters" scope="col">Chapters</th>
+            <th class="col-reached" scope="col">Reached</th>
+          </tr>
+        </thead>
+        <tbody id="leaderboardBody"></tbody>
+      </table>
+    </section>
   </main>
 
   <script src="https://identity.netlify.com/v1/netlify-identity-widget.js"></script>
@@ -894,6 +1060,12 @@
       const signupBtn = document.getElementById('signupBtn');
       const logoutBtn = document.getElementById('logoutBtn');
       const userEmailLabel = document.getElementById('userEmail');
+      const trackerView = document.getElementById('trackerView');
+      const leaderboardView = document.getElementById('leaderboardView');
+      const leaderboardStatus = document.getElementById('leaderboardStatus');
+      const leaderboardTable = document.getElementById('leaderboardTable');
+      const leaderboardBody = document.getElementById('leaderboardBody');
+      const viewTabs = Array.from(document.querySelectorAll('.view-tab'));
       const themeToggles = [
         document.getElementById('themeToggleAuth'),
         document.getElementById('themeToggleApp'),
@@ -1015,7 +1187,16 @@
 
       const PROGRESS_ENDPOINT = '/.netlify/functions/progress';
 
-      async function syncChaptersToAccount() {
+      // The latest in-flight sync, so the leaderboard can wait for a just-toggled
+      // chapter to land before fetching rankings.
+      let pendingSync = Promise.resolve();
+
+      function syncChaptersToAccount() {
+        pendingSync = postChaptersToAccount();
+        return pendingSync;
+      }
+
+      async function postChaptersToAccount() {
         const user = window.netlifyIdentity && netlifyIdentity.currentUser();
         if (!user) return;
         try {
@@ -1107,10 +1288,184 @@
         }
       }
 
+      const LEADERBOARD_ENDPOINT = '/.netlify/functions/leaderboard';
+      const LEADERBOARD_POLL_INTERVAL_MS = 30000;
+      let leaderboardIntervalId = null;
+
+      /**
+       * @typedef {Object} LeaderboardEntry
+       * @property {number} rank
+       * @property {string} displayName
+       * @property {number} chaptersCompleted
+       * @property {string} reachedAt - ISO timestamp of when they reached this count
+       * @property {boolean} isCurrentUser
+       */
+
+      /**
+       * @typedef {Object} LeaderboardResponse
+       * @property {LeaderboardEntry[]} entries - top N, ordered by rank
+       * @property {LeaderboardEntry|null} me - caller's row, even if outside the top N
+       */
+
+      /** @returns {Promise<LeaderboardResponse|null>} */
+      async function fetchLeaderboard(user) {
+        try {
+          await pendingSync;
+          const token = await user.jwt();
+          const res = await fetch(LEADERBOARD_ENDPOINT, {
+            headers: { Authorization: `Bearer ${token}` },
+          });
+          if (!res.ok) return null;
+          return await res.json();
+        } catch (err) {
+          console.error('Failed to fetch leaderboard', err);
+          return null;
+        }
+      }
+
+      function formatReachedAt(iso) {
+        const date = new Date(iso);
+        return {
+          short: date.toLocaleDateString(undefined, { month: 'short', day: 'numeric' }),
+          full: date.toLocaleString(),
+        };
+      }
+
+      // Built with textContent rather than innerHTML: display names are
+      // user-controlled (Netlify Identity full_name).
+      /** @param {LeaderboardEntry} entry */
+      function renderLeaderboardRow(entry) {
+        const tr = document.createElement('tr');
+        if (entry.isCurrentUser) tr.className = 'is-me';
+
+        const rank = document.createElement('td');
+        rank.className = 'col-rank';
+        rank.textContent = String(entry.rank);
+
+        const name = document.createElement('td');
+        name.className = 'col-name';
+        name.textContent = entry.displayName;
+        name.title = entry.displayName;
+        if (entry.isCurrentUser) {
+          const badge = document.createElement('span');
+          badge.className = 'you-badge';
+          badge.textContent = '(you)';
+          name.appendChild(badge);
+        }
+
+        const chapters = document.createElement('td');
+        chapters.className = 'col-chapters';
+        chapters.textContent = `${entry.chaptersCompleted}/${TOTAL_CHAPTERS}`;
+
+        const reached = document.createElement('td');
+        reached.className = 'col-reached';
+        const when = formatReachedAt(entry.reachedAt);
+        reached.textContent = when.short;
+        reached.title = when.full;
+
+        tr.append(rank, name, chapters, reached);
+        return tr;
+      }
+
+      function renderGapRow() {
+        const tr = document.createElement('tr');
+        tr.className = 'gap';
+        const td = document.createElement('td');
+        td.colSpan = 4;
+        td.textContent = '⋯';
+        tr.appendChild(td);
+        return tr;
+      }
+
+      /** @param {LeaderboardResponse|null} data */
+      function renderLeaderboard(data) {
+        if (!data) {
+          leaderboardStatus.textContent = 'Couldn’t load the leaderboard. Try again in a moment.';
+          leaderboardStatus.hidden = false;
+          leaderboardTable.hidden = true;
+          return;
+        }
+
+        const rows = data.entries.map(renderLeaderboardRow);
+        const meInTop = data.entries.some((entry) => entry.isCurrentUser);
+        if (data.me && !meInTop) {
+          rows.push(renderGapRow(), renderLeaderboardRow(data.me));
+        }
+        leaderboardBody.replaceChildren(...rows);
+        leaderboardTable.hidden = rows.length === 0;
+
+        if (rows.length === 0) {
+          leaderboardStatus.textContent = 'No one has completed a chapter yet — be the first!';
+          leaderboardStatus.hidden = false;
+        } else if (!data.me) {
+          leaderboardStatus.textContent = 'Complete a chapter to join the leaderboard.';
+          leaderboardStatus.hidden = false;
+        } else {
+          leaderboardStatus.hidden = true;
+        }
+      }
+
+      async function refreshLeaderboard() {
+        const user = window.netlifyIdentity && netlifyIdentity.currentUser();
+        if (!user || leaderboardView.hidden) return;
+        const data = await fetchLeaderboard(user);
+        // The user may have switched views or logged out while this was in flight.
+        if (!leaderboardView.hidden && !appEl.hidden) renderLeaderboard(data);
+      }
+
+      function startLeaderboardPolling() {
+        stopLeaderboardPolling();
+        refreshLeaderboard();
+        leaderboardIntervalId = setInterval(refreshLeaderboard, LEADERBOARD_POLL_INTERVAL_MS);
+      }
+
+      function stopLeaderboardPolling() {
+        if (leaderboardIntervalId) {
+          clearInterval(leaderboardIntervalId);
+          leaderboardIntervalId = null;
+        }
+      }
+
+      function viewFromPath() {
+        return window.location.pathname.replace(/\/+$/, '') === '/leaderboard' ? 'leaderboard' : 'tracker';
+      }
+
+      function showView(view) {
+        const isLeaderboard = view === 'leaderboard';
+        trackerView.hidden = isLeaderboard;
+        leaderboardView.hidden = !isLeaderboard;
+        viewTabs.forEach((tab) => {
+          if (tab.dataset.view === view) {
+            tab.setAttribute('aria-current', 'page');
+          } else {
+            tab.removeAttribute('aria-current');
+          }
+        });
+        if (isLeaderboard && !appEl.hidden) {
+          startLeaderboardPolling();
+        } else {
+          stopLeaderboardPolling();
+        }
+      }
+
+      viewTabs.forEach((tab) => {
+        tab.addEventListener('click', (event) => {
+          if (event.metaKey || event.ctrlKey || event.shiftKey || event.button !== 0) return;
+          event.preventDefault();
+          if (tab.getAttribute('href') !== window.location.pathname) {
+            history.pushState(null, '', tab.getAttribute('href'));
+          }
+          showView(tab.dataset.view);
+        });
+      });
+
+      window.addEventListener('popstate', () => showView(viewFromPath()));
+
       document.addEventListener('visibilitychange', () => {
         if (document.hidden || appEl.hidden) return;
         const user = window.netlifyIdentity && netlifyIdentity.currentUser();
         if (user) reconcileWithAccount(user);
+        if (!leaderboardView.hidden) refreshLeaderboard();
       });
 
       function showApp(user) {
@@ -1120,12 +1475,18 @@
         updateUI();
         reconcileWithAccount(user);
         startPolling(user);
+        showView(viewFromPath());
       }
 
       function showAuthScreen() {
         authScreen.hidden = false;
         appEl.hidden = true;
         stopPolling();
+        stopLeaderboardPolling();
+        leaderboardBody.replaceChildren();
+        leaderboardTable.hidden = true;
+        leaderboardStatus.textContent = 'Loading…';
+        leaderboardStatus.hidden = false;
       }
 
       if (window.netlifyIdentity) {

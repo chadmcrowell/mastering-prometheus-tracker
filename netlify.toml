@@ -1,2 +1,8 @@
 [functions]
   directory = "netlify/functions"
+
+# /leaderboard is a view inside index.html, not a separate page.
+[[redirects]]
+  from = "/leaderboard"
+  to = "/index.html"
+  status = 200
