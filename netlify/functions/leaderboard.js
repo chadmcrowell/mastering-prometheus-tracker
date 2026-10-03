@@ -13,7 +13,9 @@ function fallbackName(userId) {
 function toEntry(row, currentUserId) {
   return {
     rank: row.rank,
-    displayName: row.display_name || fallbackName(row.user_id),
+    // Readers without a profile have no name or username, so they're anonymous.
+    displayName: row.display_name || row.username || fallbackName(row.user_id),
+    username: row.username,
     chaptersCompleted: row.chapters_completed,
     reachedAt: row.reached_at,
     isCurrentUser: row.user_id === currentUserId,
@@ -36,7 +38,7 @@ exports.handler = async (event, context) => {
   }
   const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY);
 
-  const columns = 'rank, user_id, display_name, chapters_completed, reached_at';
+  const columns = 'rank, user_id, username, display_name, chapters_completed, reached_at';
 
   const [top, me] = await Promise.all([
     supabase
