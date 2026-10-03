@@ -65,7 +65,11 @@ unreachable from the anon/public key. There is no client-side Supabase access at
 `supabase/migrations/001_leaderboard.sql`. That migration adds a trigger on `reading_progress` that keeps
 `chapter_completions` in sync with the `chapters` array, timestamped by the DB clock — ranking never uses
 the client-supplied `updated_at`. `progress.js` also writes `display_name` from the JWT's
-`user_metadata.full_name`, so the migration must be applied before deploying. The leaderboard response
+`user_metadata.full_name` (sanitized by `displayNameFromIdentity()`), so the migration must be applied
+before deploying. Identity metadata is the single source of truth for the name. The Leaderboard view's
+name editor calls `user.update({ data: { full_name } })`, forces a token refresh with `user.jwt(true)`, then
+sends `PATCH /progress`, which copies the name from the JWT without touching chapters. Don't re-POST
+progress to sync the name: that can clobber newer progress from another device. The leaderboard response
 never includes emails or user ids, and display names are rendered with `textContent` (user-controlled).
 
 Adding a chapter means: add a `.chapter-card` block in the markup (following the existing pattern, with
