@@ -23,9 +23,10 @@ reading_progress (existing)                 chapter_completions (new, derived)
 user_id      text PK  ◄──────────────────── user_id         text  FK, on delete cascade
 chapters     boolean[15]  ── trigger ─────► chapter_number  smallint  check 1..15
 updated_at   bigint (client epoch ms)       completed_at    timestamptz default now()
-display_name text (new)                     PK (user_id, chapter_number)
+display_name text (unused; see PROFILES.md) PK (user_id, chapter_number)
 
-leaderboard (view): rank, user_id, display_name, chapters_completed, reached_at
+leaderboard (view): rank, user_id, display_name, chapters_completed, reached_at, username
+                    (display_name and username are left-joined from profiles)
 ```
 
 - **`reading_progress`** is still the only thing the app writes. The `progress` Function upserts the
@@ -38,32 +39,12 @@ leaderboard (view): rank, user_id, display_name, chapters_completed, reached_at
 - **`leaderboard`** is a plain view that aggregates `chapter_completions` per user. It's declared
   `security_invoker`, and `anon`/`authenticated` have no grants on it, so it's unreachable through
   Supabase's public REST API.
-- **`display_name`** is a copy of the Netlify Identity user's `user_metadata.full_name` (the "Name"
-  field on the signup form), which is the single source of truth. The `progress` Function copies it from
-  the JWT on every POST, and on `PATCH` (see [Editing your name](#editing-your-name)). If it's empty, the
-  leaderboard Function shows a stable pseudonym, `Reader #<first 4 hex of sha256(user_id)>`. **Emails
-  and Identity user ids are never sent to the browser.**
-
-### Editing your name
-
-The Leaderboard view has a **Shown as … / Edit name** control. Saving:
-
-1. Calls the Identity widget's `user.update({ data: { full_name } })`, updating Identity metadata.
-2. Forces a token refresh (`user.jwt(true)`), so the next JWT carries the new name.
-3. Sends `PATCH /.netlify/functions/progress` with no body. The Function copies the name from the JWT
-   into `reading_progress.display_name`. It deliberately doesn't re-POST progress, which could overwrite
-   newer progress saved from another device.
-
-Saving a blank name makes the reader anonymous (`Reader #xxxx`). Readers can also set `full_name`
-directly through the Identity API, so the Function sanitizes it rather than trusting it:
-
-- strips control characters and bidi override/isolate characters, which can visually reverse text to
-  spoof another reader's name
-- collapses whitespace
-- caps the name at 40 code points
-
-Names are also rendered with `textContent`, never `innerHTML`. Duplicate names are allowed, since
-readers are identified by rank, not name.
+- **Names** come from the reader's profile (`profiles.display_name`, falling back to
+  `profiles.username`). Profiles are opt-in; see [`PROFILES.md`](PROFILES.md). Readers without a
+  profile are shown as a stable pseudonym, `Reader #<first 4 hex of sha256(user_id)>`. The Leaderboard
+  view shows how you appear, with a link to create or edit your profile. Names link to the reader's
+  public profile page. **Emails and Identity user ids are never sent to the browser.** Names are
+  user-controlled, so they're rendered with `textContent`, never `innerHTML`.
 
 ### Access path
 
@@ -74,10 +55,10 @@ service role key and returns:
 ```json
 {
   "entries": [
-    { "rank": 1, "displayName": "Ada", "chaptersCompleted": 9, "reachedAt": "2026-10-02T14:03:11.52+00:00", "isCurrentUser": false },
-    { "rank": 2, "displayName": "Reader #3f9a", "chaptersCompleted": 7, "reachedAt": "2026-10-01T09:12:40.10+00:00", "isCurrentUser": true }
+    { "rank": 1, "displayName": "Ada", "username": "ada", "chaptersCompleted": 9, "reachedAt": "2026-10-02T14:03:11.52+00:00", "isCurrentUser": false },
+    { "rank": 2, "displayName": "Reader #3f9a", "username": null, "chaptersCompleted": 7, "reachedAt": "2026-10-01T09:12:40.10+00:00", "isCurrentUser": true }
   ],
-  "me": { "rank": 2, "displayName": "Reader #3f9a", "chaptersCompleted": 7, "reachedAt": "2026-10-01T09:12:40.10+00:00", "isCurrentUser": true }
+  "me": { "rank": 2, "displayName": "Reader #3f9a", "username": null, "chaptersCompleted": 7, "reachedAt": "2026-10-01T09:12:40.10+00:00", "isCurrentUser": true }
 }
 ```
 
@@ -93,15 +74,16 @@ reflected immediately.
 
 1. Run `supabase/migrations/001_leaderboard.sql` in the Supabase SQL editor (after `schema.sql`). It's
    idempotent, and it backfills `chapter_completions` from existing progress.
-2. **Then** deploy the code. The updated `progress` Function writes `display_name`, so if it deploys
-   before the migration, every POST fails with a "column does not exist" error.
+2. **Then** deploy the code.
+
+(`002_profiles.sql` later changes where leaderboard names come from. See [`PROFILES.md`](PROFILES.md)
+for its own deploy order.)
 
 Backfill caveat: per-chapter completion times were never recorded before this feature. Existing
 readers' chapters all get their row's last `updated_at` (clamped to `now()`), so ties among pre-existing
 readers are approximate.
 
-Existing readers appear as `Reader #xxxx` until they toggle a chapter or save a name with the
-Edit name control.
+Readers appear as `Reader #xxxx` until they create a profile.
 
 ## Changing the number of chapters
 
@@ -162,11 +144,12 @@ readership ever grows into the tens of thousands, swap it in:
 drop view if exists leaderboard;
 create materialized view leaderboard as
 select rank() over (order by count(*) desc, max(c.completed_at) asc)::int as rank,
-       c.user_id, rp.display_name,
-       count(*)::int as chapters_completed, max(c.completed_at) as reached_at
+       c.user_id, p.display_name,
+       count(*)::int as chapters_completed, max(c.completed_at) as reached_at,
+       p.username
 from chapter_completions c
-join reading_progress rp on rp.user_id = c.user_id
-group by c.user_id, rp.display_name;
+left join profiles p on p.user_id = c.user_id
+group by c.user_id, p.display_name, p.username;
 
 create unique index on leaderboard (user_id);   -- required for CONCURRENTLY
 create index on leaderboard (rank);

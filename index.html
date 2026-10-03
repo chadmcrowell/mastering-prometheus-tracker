@@ -56,6 +56,8 @@
       --color-primary-active: #0f3638;
       --color-primary-highlight: #cedcd8;
 
+      --color-error: #b3261e;
+
       --shadow-sm: 0 1px 2px rgba(0,0,0,0.06);
       --shadow-md: 0 4px 12px rgba(0,0,0,0.08);
       --shadow-lg: 0 12px 32px rgba(0,0,0,0.12);
@@ -81,6 +83,8 @@
         --color-primary-hover: #3fc4ca;
         --color-primary-active: #1f8f94;
         --color-primary-highlight: #173537;
+
+        --color-error: #f2867d;
 
         --shadow-sm: 0 1px 2px rgba(0,0,0,0.35);
         --shadow-md: 0 4px 12px rgba(0,0,0,0.45);
@@ -108,6 +112,8 @@
       --color-primary-hover: #3fc4ca;
       --color-primary-active: #1f8f94;
       --color-primary-highlight: #173537;
+
+      --color-error: #f2867d;
 
       --shadow-sm: 0 1px 2px rgba(0,0,0,0.35);
       --shadow-md: 0 4px 12px rgba(0,0,0,0.45);
@@ -312,15 +318,16 @@
         align-items: flex-start;
         width: 100%;
       }
-      .user-info {
-        width: 100%;
-        justify-content: space-between;
+      .user-menu-panel {
+        left: 0;
+        right: auto;
       }
-      .user-email {
-        min-width: 0;
-        overflow: hidden;
-        text-overflow: ellipsis;
-        white-space: nowrap;
+      .profile-head {
+        flex-wrap: wrap;
+      }
+      .avatar-lg {
+        width: 72px;
+        height: 72px;
       }
     }
 
@@ -501,19 +508,118 @@
       color: var(--color-primary);
     }
 
-    .user-info {
-      display: flex;
-      align-items: center;
-      gap: var(--space-3);
+    .user-menu {
+      position: relative;
     }
 
-    .user-email {
-      font-size: 0.8rem;
+    .user-menu-button {
+      display: inline-flex;
+      align-items: center;
+      gap: var(--space-2);
+      max-width: 240px;
+      padding: 0.2rem 0.7rem 0.2rem 0.2rem;
+      border: 1px solid var(--color-divider);
+      border-radius: var(--radius-full);
+      background: var(--color-surface-2);
+      color: var(--color-text);
+      font: inherit;
+      font-size: 0.85rem;
+      cursor: pointer;
+      transition: background var(--transition-interactive);
+    }
+
+    .user-menu-button:hover,
+    .user-menu-button[aria-expanded="true"] {
+      background: var(--color-surface-offset);
+    }
+
+    .user-menu-name {
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .user-menu-caret {
+      font-size: 0.7rem;
       color: var(--color-text-muted);
     }
 
-    .logout-button,
+    .user-menu-panel {
+      position: absolute;
+      top: calc(100% + var(--space-2));
+      right: 0;
+      z-index: 10;
+      min-width: 200px;
+      max-width: 280px;
+      padding: var(--space-2);
+      display: flex;
+      flex-direction: column;
+      background: var(--color-surface);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-md);
+      box-shadow: var(--shadow-md);
+    }
+
+    .user-menu-email {
+      padding: var(--space-1) var(--space-2) var(--space-2);
+      margin-bottom: var(--space-1);
+      border-bottom: 1px solid var(--color-divider);
+      font-size: 0.75rem;
+      color: var(--color-text-muted);
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .user-menu-item {
+      display: block;
+      width: 100%;
+      padding: var(--space-2);
+      border: 0;
+      border-radius: var(--radius-sm);
+      background: none;
+      color: var(--color-text);
+      font: inherit;
+      font-size: 0.85rem;
+      text-align: left;
+      text-decoration: none;
+      cursor: pointer;
+    }
+
+    .user-menu-item:hover,
+    .user-menu-item:focus-visible {
+      background: var(--color-surface-offset);
+    }
+
+    .avatar {
+      display: block;
+      flex-shrink: 0;
+      border-radius: 50%;
+      object-fit: cover;
+      background: var(--color-surface-offset);
+    }
+
+    .avatar-sm {
+      width: 28px;
+      height: 28px;
+    }
+
+    .avatar-md {
+      width: 64px;
+      height: 64px;
+    }
+
+    .avatar-lg {
+      width: 96px;
+      height: 96px;
+      border: 1px solid var(--color-border);
+    }
+
     .secondary-button {
+      display: inline-flex;
+      align-items: center;
+      text-decoration: none;
       padding: 0.3rem 0.8rem;
       border-radius: var(--radius-full);
       border: 1px solid var(--color-divider);
@@ -527,7 +633,6 @@
       transition: background var(--transition-interactive), color var(--transition-interactive);
     }
 
-    .logout-button:hover,
     .secondary-button:hover {
       background: var(--color-surface-offset);
       color: var(--color-text);
@@ -584,7 +689,11 @@
       font-size: 1.1rem;
     }
 
-    .name-editor {
+    .name-banner {
+      display: flex;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: var(--space-2);
       margin-bottom: var(--space-4);
       padding: var(--space-3) var(--space-4);
       background: var(--color-surface-2);
@@ -593,59 +702,183 @@
       font-size: 0.9rem;
     }
 
-    .name-display,
-    .name-form-row {
-      display: flex;
-      align-items: center;
-      gap: var(--space-2);
-    }
-
-    .name-display .name-value {
+    .name-banner .name-value {
       min-width: 0;
       overflow: hidden;
       text-overflow: ellipsis;
       white-space: nowrap;
     }
 
-    .name-display .name-value.is-anonymous {
+    .name-banner .name-value.is-anonymous {
       font-weight: 400;
       font-style: italic;
       color: var(--color-text-muted);
     }
 
-    .name-form label {
-      display: block;
-      margin-bottom: var(--space-1);
-      font-size: 0.8rem;
+    .leaderboard-name-link {
+      color: inherit;
+      text-decoration: none;
+    }
+
+    .leaderboard-name-link:hover {
+      color: var(--color-primary);
+      text-decoration: underline;
+    }
+
+    .profile-topbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: var(--space-3);
+      margin-bottom: var(--space-6);
+    }
+
+    .profile-home {
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: var(--color-text-muted);
+      text-decoration: none;
+    }
+
+    .profile-home:hover {
+      color: var(--color-primary);
+    }
+
+    .profile-head {
+      display: flex;
+      align-items: center;
+      gap: var(--space-4);
+      margin-bottom: var(--space-6);
+    }
+
+    .profile-identity {
+      flex: 1;
+      min-width: 0;
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-1);
+    }
+
+    .profile-identity h1 {
+      overflow-wrap: anywhere;
+    }
+
+    .profile-progress {
+      margin-bottom: var(--space-6);
+      padding: var(--space-4);
+      background: var(--color-surface-2);
+      border: 1px solid var(--color-divider);
+      border-radius: var(--radius-md);
+    }
+
+    .profile-bio {
+      margin-bottom: var(--space-6);
+      white-space: pre-line;
+      overflow-wrap: anywhere;
+    }
+
+    .profile-links {
+      list-style: none;
+      display: flex;
+      flex-wrap: wrap;
+      gap: var(--space-2);
+    }
+
+    .profile-form {
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-5);
+    }
+
+    .form-field {
+      flex: 1;
+      min-width: 0;
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-1);
+    }
+
+    .form-field label,
+    .profile-form legend {
+      font-size: 0.85rem;
+      font-weight: 600;
+    }
+
+    .optional {
+      font-weight: 400;
       color: var(--color-text-muted);
     }
 
-    .name-input {
-      flex: 1;
-      min-width: 0;
-      padding: 0.35rem 0.75rem;
+    .profile-form fieldset {
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-3);
+      padding: var(--space-3) var(--space-4) var(--space-4);
+      border: 1px solid var(--color-divider);
+      border-radius: var(--radius-md);
+    }
+
+    .profile-form legend {
+      padding: 0 var(--space-1);
+    }
+
+    .text-input {
+      width: 100%;
+      padding: 0.45rem 0.75rem;
       border: 1px solid var(--color-border);
-      border-radius: var(--radius-full);
+      border-radius: var(--radius-md);
       background: var(--color-surface);
       color: var(--color-text);
       font: inherit;
       font-size: 0.9rem;
     }
 
-    .name-input:focus {
+    .text-input:focus {
       outline: 2px solid var(--color-primary);
       outline-offset: 1px;
     }
 
-    .name-form .chapter-button:disabled {
+    .text-input[aria-invalid="true"] {
+      border-color: var(--color-error);
+    }
+
+    textarea.text-input {
+      min-height: 6rem;
+      resize: vertical;
+    }
+
+    .avatar-field {
+      display: flex;
+      align-items: flex-start;
+      gap: var(--space-4);
+    }
+
+    .field-hint {
+      font-size: 0.8rem;
+      color: var(--color-text-muted);
+      overflow-wrap: anywhere;
+    }
+
+    .field-error {
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: var(--color-error);
+    }
+
+    .form-actions {
+      display: flex;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: var(--space-3);
+    }
+
+    .form-actions .auth-button:disabled {
       opacity: 0.6;
       cursor: progress;
     }
 
-    .name-hint,
-    .name-status {
-      margin-top: var(--space-1);
-      font-size: 0.8rem;
+    .form-status {
+      font-size: 0.85rem;
       color: var(--color-text-muted);
     }
 
@@ -771,16 +1004,25 @@
       <div class="total-progress">
         <button class="theme-toggle" id="themeToggleApp" type="button" aria-label="Switch to dark mode">🌙</button>
         <p class="meta" id="days-label">Day 1 of 15</p>
-        <div class="user-info">
-          <span class="user-email" id="userEmail"></span>
-          <button class="logout-button" type="button" id="logoutBtn">Log out</button>
+        <div class="user-menu">
+          <button class="user-menu-button" type="button" id="userMenuBtn" aria-expanded="false" aria-controls="userMenu">
+            <img class="avatar avatar-sm" id="headerAvatar" alt="" />
+            <span class="user-menu-name" id="headerName"></span>
+            <span class="user-menu-caret" aria-hidden="true">▾</span>
+          </button>
+          <div class="user-menu-panel" id="userMenu" hidden>
+            <p class="user-menu-email" id="userEmail"></p>
+            <a class="user-menu-item" href="/profile/edit" data-route id="myProfileLink" hidden>My profile</a>
+            <a class="user-menu-item" href="/profile/edit" data-route id="editProfileLink">Edit profile</a>
+            <button class="user-menu-item" type="button" id="logoutBtn">Log out</button>
+          </div>
         </div>
       </div>
     </header>
 
     <nav class="view-tabs" aria-label="Views">
-      <a class="view-tab" href="/" data-view="tracker">Tracker</a>
-      <a class="view-tab" href="/leaderboard" data-view="leaderboard">Leaderboard</a>
+      <a class="view-tab" href="/" data-route data-view="tracker">Tracker</a>
+      <a class="view-tab" href="/leaderboard" data-route data-view="leaderboard">Leaderboard</a>
     </nav>
 
     <div id="trackerView">
@@ -1099,22 +1341,10 @@
         <h2>Leaderboard</h2>
         <p class="meta">Ranked by chapters completed · ties go to whoever got there first</p>
       </div>
-      <div class="name-editor">
-        <div class="name-display" id="nameDisplay">
-          <span class="meta">Shown as</span>
-          <strong class="name-value" id="nameValue"></strong>
-          <button class="secondary-button" type="button" id="nameEditBtn">Edit name</button>
-        </div>
-        <form class="name-form" id="nameForm" hidden>
-          <label for="nameInput">Leaderboard name</label>
-          <div class="name-form-row">
-            <input class="name-input" id="nameInput" type="text" maxlength="40" autocomplete="nickname" />
-            <button class="chapter-button" type="submit" id="nameSaveBtn">Save</button>
-            <button class="secondary-button" type="button" id="nameCancelBtn">Cancel</button>
-          </div>
-          <p class="name-hint">Visible to all logged-in readers. Leave blank to appear anonymously.</p>
-        </form>
-        <p class="name-status" id="nameStatus" role="status" hidden></p>
+      <div class="name-banner">
+        <span class="meta">Shown as</span>
+        <strong class="name-value" id="nameValue"></strong>
+        <a class="secondary-button" href="/profile/edit" data-route id="nameEditLink">Edit profile</a>
       </div>
       <p class="leaderboard-status" id="leaderboardStatus">Loading…</p>
       <table class="leaderboard-table" id="leaderboardTable" hidden>
@@ -1129,6 +1359,82 @@
         <tbody id="leaderboardBody"></tbody>
       </table>
     </section>
+
+    <section id="profileEditView" aria-label="Edit profile" hidden>
+      <div class="leaderboard-intro">
+        <h2 id="profileEditTitle">Your profile</h2>
+        <p class="meta">Your profile page is public: anyone with the link can see it, even without logging in.</p>
+      </div>
+      <p class="leaderboard-status" id="profileEditStatus">Loading…</p>
+      <form class="profile-form" id="profileForm" hidden>
+        <div class="avatar-field">
+          <img class="avatar avatar-md" id="avatarPreview" alt="" />
+          <div class="form-field">
+            <label for="fieldAvatarUrl">Avatar image URL <span class="optional">(optional)</span></label>
+            <input class="text-input" id="fieldAvatarUrl" name="avatarUrl" type="url" maxlength="500" placeholder="https://…" />
+            <p class="field-hint">Leave blank to use a generated avatar.</p>
+            <p class="field-error" data-error-for="avatarUrl" hidden></p>
+          </div>
+        </div>
+        <div class="form-field">
+          <label for="fieldUsername">Username</label>
+          <input class="text-input" id="fieldUsername" name="username" type="text" required minlength="3" maxlength="30"
+                 pattern="[a-z0-9][a-z0-9\-]{1,28}[a-z0-9]" autocomplete="username" autocapitalize="off" spellcheck="false" />
+          <p class="field-hint" id="usernameHint"></p>
+          <p class="field-error" data-error-for="username" hidden></p>
+        </div>
+        <div class="form-field">
+          <label for="fieldDisplayName">Display name <span class="optional">(optional)</span></label>
+          <input class="text-input" id="fieldDisplayName" name="displayName" type="text" maxlength="40" autocomplete="nickname" />
+          <p class="field-hint">Shown on your profile and the leaderboard. Defaults to your username.</p>
+          <p class="field-error" data-error-for="displayName" hidden></p>
+        </div>
+        <div class="form-field">
+          <label for="fieldBio">Bio <span class="optional">(optional)</span></label>
+          <textarea class="text-input" id="fieldBio" name="bio" maxlength="500" rows="4"></textarea>
+          <p class="field-hint"><span id="bioCounter">0/500</span> · Plain text; line breaks are kept.</p>
+          <p class="field-error" data-error-for="bio" hidden></p>
+        </div>
+        <fieldset id="socialFields">
+          <legend>Links <span class="optional">(optional)</span></legend>
+        </fieldset>
+        <div class="form-actions">
+          <button class="auth-button" type="submit" id="profileSaveBtn">Save profile</button>
+          <a class="secondary-button" href="/profile/edit" data-route id="profileViewLink" hidden>View profile</a>
+          <p class="form-status" id="profileFormStatus" role="status" hidden></p>
+        </div>
+      </form>
+    </section>
+  </main>
+
+  <main class="app" aria-label="Reader profile" id="profileScreen" hidden>
+    <div class="profile-topbar">
+      <a class="profile-home" href="/" data-route>← Mastering Prometheus reading tracker</a>
+      <button class="theme-toggle" id="themeToggleProfile" type="button" aria-label="Switch to dark mode">🌙</button>
+    </div>
+    <p class="leaderboard-status" id="profileStatus">Loading…</p>
+    <article id="profileCard" hidden>
+      <div class="profile-head">
+        <img class="avatar avatar-lg" id="profileAvatar" alt="" />
+        <div class="profile-identity">
+          <h1 id="profileName"></h1>
+          <p class="subtitle" id="profileHandle"></p>
+          <p class="meta" id="profileJoined"></p>
+        </div>
+        <a class="secondary-button" href="/profile/edit" data-route id="profileEditLink" hidden>Edit profile</a>
+      </div>
+      <section class="profile-progress" aria-label="Reading progress">
+        <div class="progress-bar" aria-hidden="true">
+          <div class="progress-bar-fill" id="profileProgressFill"></div>
+        </div>
+        <div class="progress-labels">
+          <span id="profileProgressText"></span>
+          <span>Mastering Prometheus</span>
+        </div>
+      </section>
+      <p class="profile-bio" id="profileBio" hidden></p>
+      <ul class="profile-links" id="profileLinks" aria-label="Links" hidden></ul>
+    </article>
   </main>
 
   <script src="https://identity.netlify.com/v1/netlify-identity-widget.js"></script>
@@ -1150,18 +1456,43 @@
       const leaderboardTable = document.getElementById('leaderboardTable');
       const leaderboardBody = document.getElementById('leaderboardBody');
       const viewTabs = Array.from(document.querySelectorAll('.view-tab'));
-      const nameDisplay = document.getElementById('nameDisplay');
       const nameValue = document.getElementById('nameValue');
-      const nameEditBtn = document.getElementById('nameEditBtn');
-      const nameForm = document.getElementById('nameForm');
-      const nameInput = document.getElementById('nameInput');
-      const nameSaveBtn = document.getElementById('nameSaveBtn');
-      const nameCancelBtn = document.getElementById('nameCancelBtn');
-      const nameStatus = document.getElementById('nameStatus');
+      const nameEditLink = document.getElementById('nameEditLink');
+      const userMenuBtn = document.getElementById('userMenuBtn');
+      const userMenu = document.getElementById('userMenu');
+      const headerAvatar = document.getElementById('headerAvatar');
+      const headerName = document.getElementById('headerName');
+      const myProfileLink = document.getElementById('myProfileLink');
+      const editProfileLink = document.getElementById('editProfileLink');
+      const profileEditView = document.getElementById('profileEditView');
+      const profileEditTitle = document.getElementById('profileEditTitle');
+      const profileEditStatus = document.getElementById('profileEditStatus');
+      const profileForm = document.getElementById('profileForm');
+      const avatarPreview = document.getElementById('avatarPreview');
+      const usernameHint = document.getElementById('usernameHint');
+      const bioCounter = document.getElementById('bioCounter');
+      const socialFields = document.getElementById('socialFields');
+      const profileSaveBtn = document.getElementById('profileSaveBtn');
+      const profileViewLink = document.getElementById('profileViewLink');
+      const profileFormStatus = document.getElementById('profileFormStatus');
+      const profileScreen = document.getElementById('profileScreen');
+      const profileStatus = document.getElementById('profileStatus');
+      const profileCard = document.getElementById('profileCard');
+      const profileAvatar = document.getElementById('profileAvatar');
+      const profileName = document.getElementById('profileName');
+      const profileHandle = document.getElementById('profileHandle');
+      const profileJoined = document.getElementById('profileJoined');
+      const profileEditLink = document.getElementById('profileEditLink');
+      const profileProgressFill = document.getElementById('profileProgressFill');
+      const profileProgressText = document.getElementById('profileProgressText');
+      const profileBio = document.getElementById('profileBio');
+      const profileLinks = document.getElementById('profileLinks');
       const themeToggles = [
         document.getElementById('themeToggleAuth'),
         document.getElementById('themeToggleApp'),
+        document.getElementById('themeToggleProfile'),
       ];
+      const DEFAULT_TITLE = document.title;
 
       const prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)');
 
@@ -1388,6 +1719,7 @@
        * @typedef {Object} LeaderboardEntry
        * @property {number} rank
        * @property {string} displayName
+       * @property {string|null} username - null if the reader hasn't created a profile
        * @property {number} chaptersCompleted
        * @property {string} reachedAt - ISO timestamp of when they reached this count
        * @property {boolean} isCurrentUser
@@ -1424,7 +1756,7 @@
       }
 
       // Built with textContent rather than innerHTML: display names are
-      // user-controlled (Netlify Identity full_name).
+      // user-controlled (profiles.display_name).
       /** @param {LeaderboardEntry} entry */
       function renderLeaderboardRow(entry) {
         const tr = document.createElement('tr');
@@ -1436,8 +1768,15 @@
 
         const name = document.createElement('td');
         name.className = 'col-name';
-        name.textContent = entry.displayName;
         name.title = entry.displayName;
+        const label = document.createElement(entry.username ? 'a' : 'span');
+        label.textContent = entry.displayName;
+        if (entry.username) {
+          label.className = 'leaderboard-name-link';
+          label.href = profilePath(entry.username);
+          label.setAttribute('data-route', '');
+        }
+        name.appendChild(label);
         if (entry.isCurrentUser) {
           const badge = document.createElement('span');
           badge.className = 'you-badge';
@@ -1518,88 +1857,448 @@
         }
       }
 
-      // The leaderboard name lives in the Netlify Identity user's
-      // user_metadata.full_name (the signup form's "Name" field), so there's a
-      // single source of truth. The progress Function copies it into Supabase,
-      // sanitizing it on the way, for the leaderboard to read.
-      function currentDisplayName(user) {
-        const name = user && user.user_metadata && user.user_metadata.full_name;
-        return typeof name === 'string' ? name.replace(/\s+/g, ' ').trim() : '';
+      const PROFILE_ENDPOINT = '/.netlify/functions/profile';
+      const MAX_BIO_LENGTH = 500;
+
+      /**
+       * @typedef {Object} Profile
+       * @property {string} username
+       * @property {string|null} displayName
+       * @property {string|null} bio - plain text, rendered with line breaks kept
+       * @property {string|null} avatarUrl - https only; null = generated avatar
+       * @property {Object<string, string>} socialLinks - https URLs keyed by SOCIAL_NETWORKS keys
+       * @property {string} joinedAt - ISO timestamp the profile was created
+       * @property {number} chaptersCompleted
+       */
+
+      // Order, labels, and inputs for profile links. Keys must match SOCIAL_HOSTS
+      // in netlify/functions/profile.js and the profiles_social_links_shape check.
+      const SOCIAL_NETWORKS = [
+        { key: 'linkedin', label: 'LinkedIn', type: 'url', placeholder: 'https://www.linkedin.com/in/…' },
+        { key: 'bluesky', label: 'Bluesky', type: 'text', placeholder: 'https://bsky.app/profile/… or @handle.bsky.social' },
+        { key: 'twitter', label: 'X / Twitter', type: 'url', placeholder: 'https://x.com/…' },
+        { key: 'github', label: 'GitHub', type: 'url', placeholder: 'https://github.com/…' },
+        { key: 'website', label: 'Website', type: 'url', placeholder: 'https://…' },
+      ];
+
+      /** @type {Profile|null} the logged-in user's profile; null until they create one */
+      let myProfile = null;
+      /** @type {{username: string, displayName: string|null}|null} first-time form defaults */
+      let mySuggested = null;
+      /** @type {Promise<object|null>|null} in-flight or settled load of myProfile */
+      let myProfileRequest = null;
+      /** @type {Profile|null} the profile shown on the public profile screen */
+      let shownProfile = null;
+      let shownProfileUsername = null;
+
+      function currentUser() {
+        return (window.netlifyIdentity && netlifyIdentity.currentUser()) || null;
       }
 
-      function renderNameDisplay(user) {
-        const name = currentDisplayName(user);
-        nameValue.textContent = name || 'Anonymous reader';
-        nameValue.title = name;
-        nameValue.classList.toggle('is-anonymous', !name);
+      function profilePath(username) {
+        return `/profile/${encodeURIComponent(username)}`;
       }
 
-      function setNameStatus(message) {
-        nameStatus.textContent = message;
-        nameStatus.hidden = !message;
+      // --- Avatars: an https URL the user supplied, or one generated locally from
+      // their name (no storage, no third-party request).
+
+      function hashString(value) {
+        let hash = 0;
+        for (const ch of value) hash = (hash * 31 + ch.codePointAt(0)) >>> 0;
+        return hash;
       }
 
-      function openNameEditor() {
-        const user = window.netlifyIdentity && netlifyIdentity.currentUser();
-        nameInput.value = currentDisplayName(user);
-        setNameStatus('');
-        nameDisplay.hidden = true;
-        nameForm.hidden = false;
-        nameInput.focus();
-        nameInput.select();
+      function initialsFor(name) {
+        // First letter or digit of up to two words, skipping punctuation.
+        const firsts = name
+          .split(/[\s-]+/)
+          .map((word) => Array.from(word).find((ch) => /[\p{L}\p{N}]/u.test(ch)))
+          .filter(Boolean);
+        return firsts.slice(0, 2).join('').toUpperCase() || '?';
       }
 
-      function closeNameEditor() {
-        nameForm.hidden = true;
-        nameDisplay.hidden = false;
+      function escapeXml(value) {
+        return value.replace(/[&<>"']/g, (c) => `&#${c.charCodeAt(0)};`);
       }
 
-      async function saveDisplayName(name) {
-        const user = window.netlifyIdentity && netlifyIdentity.currentUser();
-        if (!user) return;
-        const updatedUser = await user.update({ data: { full_name: name } });
-        // Force a token refresh so the JWT the Function reads carries the new name.
-        const token = await updatedUser.jwt(true);
-        const res = await fetch(PROGRESS_ENDPOINT, {
-          method: 'PATCH',
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        if (!res.ok) throw new Error(`Saving display name failed with ${res.status}`);
-        renderNameDisplay(updatedUser);
+      function generatedAvatarUrl(seed, name) {
+        const hue = hashString(seed) % 360;
+        const svg =
+          '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">' +
+          `<rect width="64" height="64" fill="hsl(${hue}, 45%, 42%)"/>` +
+          '<text x="32" y="32" dy="0.35em" text-anchor="middle" fill="#ffffff" ' +
+          'font-family="system-ui, sans-serif" font-size="26" font-weight="600">' +
+          `${escapeXml(initialsFor(name))}</text></svg>`;
+        return `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
       }
 
-      nameEditBtn.addEventListener('click', openNameEditor);
-      nameCancelBtn.addEventListener('click', closeNameEditor);
-      nameForm.addEventListener('keydown', (event) => {
-        if (event.key === 'Escape') closeNameEditor();
+      function setAvatar(img, profile, fallbackName) {
+        const name = (profile && (profile.displayName || profile.username)) || fallbackName || '?';
+        const generated = generatedAvatarUrl((profile && profile.username) || name, name);
+        const custom = profile && profile.avatarUrl && /^https:\/\//i.test(profile.avatarUrl);
+        img.referrerPolicy = 'no-referrer';
+        img.onerror = () => {
+          img.onerror = null;
+          img.src = generated;
+        };
+        img.src = custom ? profile.avatarUrl : generated;
+      }
+
+      // --- Account UI: header menu and the leaderboard's "Shown as" banner.
+
+      function renderAccountUI(user) {
+        const name = myProfile
+          ? myProfile.displayName || myProfile.username
+          : (user && user.email) || 'Account';
+        headerName.textContent = name;
+        setAvatar(headerAvatar, myProfile, name);
+        userEmailLabel.textContent = user && user.email ? user.email : '';
+        myProfileLink.hidden = !myProfile;
+        if (myProfile) myProfileLink.href = profilePath(myProfile.username);
+        editProfileLink.textContent = myProfile ? 'Edit profile' : 'Create profile';
+
+        nameValue.textContent = myProfile ? myProfile.displayName || myProfile.username : 'Anonymous reader';
+        nameValue.classList.toggle('is-anonymous', !myProfile);
+        nameEditLink.textContent = myProfile ? 'Edit profile' : 'Create a profile to show your name';
+        renderOwnerControls();
+      }
+
+      function setUserMenuOpen(open) {
+        userMenu.hidden = !open;
+        userMenuBtn.setAttribute('aria-expanded', String(open));
+      }
+
+      userMenuBtn.addEventListener('click', () => setUserMenuOpen(userMenu.hidden));
+
+      document.addEventListener('click', (event) => {
+        if (!userMenu.hidden && !event.target.closest('.user-menu')) setUserMenuOpen(false);
       });
 
-      nameForm.addEventListener('submit', async (event) => {
-        event.preventDefault();
-        const name = nameInput.value.replace(/\s+/g, ' ').trim();
-        nameSaveBtn.disabled = true;
-        setNameStatus('Saving…');
-        try {
-          await saveDisplayName(name);
-          closeNameEditor();
-          setNameStatus('');
-          refreshLeaderboard();
-        } catch (err) {
-          console.error('Failed to save display name', err);
-          setNameStatus('Couldn’t save your name. Try again in a moment.');
-        } finally {
-          nameSaveBtn.disabled = false;
+      document.addEventListener('keydown', (event) => {
+        if (event.key === 'Escape' && !userMenu.hidden) {
+          setUserMenuOpen(false);
+          userMenuBtn.focus();
         }
       });
 
-      function viewFromPath() {
-        return window.location.pathname.replace(/\/+$/, '') === '/leaderboard' ? 'leaderboard' : 'tracker';
+      async function loadMyProfile(user) {
+        try {
+          const token = await user.jwt();
+          const res = await fetch(`${PROFILE_ENDPOINT}?me=1`, {
+            headers: { Authorization: `Bearer ${token}` },
+          });
+          if (!res.ok) throw new Error(`Loading profile failed with ${res.status}`);
+          const data = await res.json();
+          if (currentUser() !== user) return null; // logged out meanwhile
+          myProfile = data.profile;
+          mySuggested = data.suggested;
+          renderAccountUI(user);
+          return data;
+        } catch (err) {
+          console.error('Failed to load profile', err);
+          myProfileRequest = null; // let the next attempt retry
+          return null;
+        }
+      }
+
+      // --- Public profile screen (no login required).
+
+      function renderOwnerControls() {
+        profileEditLink.hidden = !(
+          shownProfile &&
+          myProfile &&
+          shownProfile.username === myProfile.username
+        );
+      }
+
+      function renderSocialLink(network, href) {
+        const item = document.createElement('li');
+        const link = document.createElement('a');
+        link.className = 'secondary-button';
+        link.href = href;
+        link.target = '_blank';
+        link.rel = 'noopener noreferrer nofollow ugc';
+        link.title = href;
+        link.textContent = network.label;
+        item.appendChild(link);
+        return item;
+      }
+
+      /** @param {Profile} profile */
+      function renderPublicProfile(profile) {
+        shownProfile = profile;
+        const name = profile.displayName || profile.username;
+        document.title = `${name} · ${DEFAULT_TITLE}`;
+        setAvatar(profileAvatar, profile, name);
+        profileAvatar.alt = `${name}’s avatar`;
+        profileName.textContent = name;
+        profileHandle.textContent = `@${profile.username}`;
+        profileJoined.textContent = `Joined ${new Date(profile.joinedAt).toLocaleDateString(undefined, {
+          month: 'long',
+          year: 'numeric',
+        })}`;
+
+        const percentage = Math.round((profile.chaptersCompleted / TOTAL_CHAPTERS) * 100);
+        profileProgressFill.style.width = `${percentage}%`;
+        profileProgressText.textContent = `${profile.chaptersCompleted}/${TOTAL_CHAPTERS} chapters read`;
+
+        // textContent (plus `white-space: pre-line`), never innerHTML: bios are plain text.
+        profileBio.textContent = profile.bio || '';
+        profileBio.hidden = !profile.bio;
+
+        // The server only stores https URLs; re-check anyway before making links.
+        const links = SOCIAL_NETWORKS.filter((network) => {
+          const href = profile.socialLinks && profile.socialLinks[network.key];
+          return typeof href === 'string' && /^https:\/\//i.test(href);
+        }).map((network) => renderSocialLink(network, profile.socialLinks[network.key]));
+        profileLinks.replaceChildren(...links);
+        profileLinks.hidden = links.length === 0;
+
+        renderOwnerControls();
+        profileStatus.hidden = true;
+        profileCard.hidden = false;
+      }
+
+      async function showPublicProfile(username) {
+        if (username === shownProfileUsername) return; // already shown or loading
+        shownProfileUsername = username;
+        shownProfile = null;
+        profileCard.hidden = true;
+        profileStatus.textContent = 'Loading…';
+        profileStatus.hidden = false;
+        document.title = DEFAULT_TITLE;
+
+        let profile = null;
+        let notFound = false;
+        try {
+          const res = await fetch(`${PROFILE_ENDPOINT}?username=${encodeURIComponent(username)}`);
+          if (res.status === 404) {
+            notFound = true;
+          } else if (res.ok) {
+            profile = await res.json();
+          }
+        } catch (err) {
+          console.error('Failed to load profile', err);
+        }
+        if (shownProfileUsername !== username) return; // navigated elsewhere meanwhile
+
+        if (profile) {
+          renderPublicProfile(profile);
+        } else if (notFound) {
+          profileStatus.textContent = 'Profile not found. The username may have changed, or never existed.';
+        } else {
+          shownProfileUsername = null; // allow a retry
+          profileStatus.textContent = 'Couldn’t load this profile. Try again in a moment.';
+        }
+      }
+
+      // --- Profile edit form (login required).
+
+      SOCIAL_NETWORKS.forEach((network) => {
+        const field = document.createElement('div');
+        field.className = 'form-field';
+        const label = document.createElement('label');
+        label.htmlFor = `fieldSocial-${network.key}`;
+        label.textContent = network.label;
+        const input = document.createElement('input');
+        input.className = 'text-input';
+        input.id = `fieldSocial-${network.key}`;
+        input.name = `social.${network.key}`;
+        input.type = network.type;
+        input.maxLength = 500;
+        input.placeholder = network.placeholder;
+        input.autocomplete = 'url';
+        const error = document.createElement('p');
+        error.className = 'field-error';
+        error.dataset.errorFor = input.name;
+        error.hidden = true;
+        field.append(label, input, error);
+        socialFields.appendChild(field);
+      });
+
+      const formFields = profileForm.elements;
+
+      function setFormStatus(message) {
+        profileFormStatus.textContent = message;
+        profileFormStatus.hidden = !message;
+      }
+
+      function clearFieldErrors() {
+        profileForm.querySelectorAll('.field-error').forEach((el) => {
+          el.textContent = '';
+          el.hidden = true;
+        });
+        profileForm.querySelectorAll('[aria-invalid]').forEach((el) => el.removeAttribute('aria-invalid'));
+      }
+
+      // `errors` is keyed by form field name, as returned by the profile Function.
+      function showFieldErrors(errors) {
+        let firstInvalid = null;
+        Object.keys(errors).forEach((name) => {
+          const error = profileForm.querySelector(`[data-error-for="${CSS.escape(name)}"]`);
+          if (error) {
+            error.textContent = errors[name];
+            error.hidden = false;
+          }
+          const input = formFields.namedItem(name);
+          if (input) {
+            input.setAttribute('aria-invalid', 'true');
+            firstInvalid = firstInvalid || input;
+          }
+        });
+        if (firstInvalid) firstInvalid.focus();
+      }
+
+      function updateFormPreview() {
+        const username = formFields.username.value.trim();
+        usernameHint.textContent = `Your public page: ${window.location.origin}/profile/${username || '…'}`;
+        bioCounter.textContent = `${Array.from(formFields.bio.value).length}/${MAX_BIO_LENGTH}`;
+        setAvatar(
+          avatarPreview,
+          {
+            username,
+            displayName: formFields.displayName.value.trim(),
+            avatarUrl: formFields.avatarUrl.value.trim(),
+          },
+          '?'
+        );
+      }
+
+      function fillProfileForm(profile, suggested) {
+        const source = profile || {
+          username: (suggested && suggested.username) || '',
+          displayName: suggested && suggested.displayName,
+          bio: null,
+          avatarUrl: null,
+          socialLinks: {},
+        };
+        formFields.username.value = source.username || '';
+        formFields.displayName.value = source.displayName || '';
+        formFields.bio.value = source.bio || '';
+        formFields.avatarUrl.value = source.avatarUrl || '';
+        SOCIAL_NETWORKS.forEach((network) => {
+          formFields.namedItem(`social.${network.key}`).value =
+            (source.socialLinks && source.socialLinks[network.key]) || '';
+        });
+        profileEditTitle.textContent = profile ? 'Edit your profile' : 'Create your profile';
+        profileSaveBtn.textContent = profile ? 'Save profile' : 'Create profile';
+        profileViewLink.hidden = !profile;
+        if (profile) profileViewLink.href = profilePath(profile.username);
+        updateFormPreview();
+      }
+
+      async function openProfileEditor() {
+        const user = currentUser();
+        if (!user) return;
+        clearFieldErrors();
+        setFormStatus('');
+        profileForm.hidden = true;
+        profileEditStatus.textContent = 'Loading…';
+        profileEditStatus.hidden = false;
+        if (!myProfileRequest) myProfileRequest = loadMyProfile(user);
+        const data = await myProfileRequest;
+        if (profileEditView.hidden) return; // navigated elsewhere meanwhile
+        if (!data) {
+          profileEditStatus.textContent = 'Couldn’t load your profile. Try again in a moment.';
+          return;
+        }
+        fillProfileForm(myProfile, mySuggested);
+        profileEditStatus.hidden = true;
+        profileForm.hidden = false;
+      }
+
+      profileForm.addEventListener('input', (event) => {
+        if (event.target === formFields.username) {
+          // Usernames are lowercase; lowercase as they type, keeping the caret put.
+          const input = formFields.username;
+          const { selectionStart, selectionEnd } = input;
+          input.value = input.value.toLowerCase();
+          input.setSelectionRange(selectionStart, selectionEnd);
+        }
+        if (event.target.hasAttribute('aria-invalid')) event.target.removeAttribute('aria-invalid');
+        updateFormPreview();
+      });
+
+      // Runs only once the browser's built-in checks (required, pattern, type=url,
+      // maxlength) pass. The profile Function re-validates everything.
+      profileForm.addEventListener('submit', async (event) => {
+        event.preventDefault();
+        const user = currentUser();
+        if (!user) return;
+        clearFieldErrors();
+        const isNew = !myProfile;
+        const payload = {
+          username: formFields.username.value,
+          displayName: formFields.displayName.value,
+          bio: formFields.bio.value,
+          avatarUrl: formFields.avatarUrl.value,
+          socialLinks: Object.fromEntries(
+            SOCIAL_NETWORKS.map((network) => [network.key, formFields.namedItem(`social.${network.key}`).value])
+          ),
+        };
+        profileSaveBtn.disabled = true;
+        setFormStatus('Saving…');
+        try {
+          const token = await user.jwt();
+          const res = await fetch(PROFILE_ENDPOINT, {
+            method: 'PUT',
+            headers: {
+              'Content-Type': 'application/json',
+              Authorization: `Bearer ${token}`,
+            },
+            body: JSON.stringify(payload),
+          });
+          const data = await res.json().catch(() => ({}));
+          if (!res.ok) {
+            if (data.errors) {
+              showFieldErrors(data.errors);
+              setFormStatus('Fix the highlighted fields and try again.');
+            } else {
+              setFormStatus('Couldn’t save your profile. Try again in a moment.');
+            }
+            return;
+          }
+          myProfile = data;
+          mySuggested = null;
+          shownProfileUsername = null; // so the public page refetches
+          renderAccountUI(user);
+          fillProfileForm(myProfile, null);
+          setFormStatus(isNew ? 'Profile created. It’s now public.' : 'Profile saved.');
+        } catch (err) {
+          console.error('Failed to save profile', err);
+          setFormStatus('Couldn’t save your profile. Try again in a moment.');
+        } finally {
+          profileSaveBtn.disabled = false;
+        }
+      });
+
+      // --- Routing. Paths (rewritten to index.html in netlify.toml):
+      //   /                    tracker            (login required)
+      //   /leaderboard         leaderboard        (login required)
+      //   /profile/edit        profile edit form  (login required)
+      //   /profile/:username   public profile     (no login)
+
+      function currentRoute() {
+        const path = window.location.pathname.replace(/\/+$/, '') || '/';
+        if (path === '/leaderboard') return { view: 'leaderboard' };
+        if (path === '/profile/edit') return { view: 'profileEdit' };
+        const match = path.match(/^\/profile\/([^/]+)$/);
+        if (match) {
+          let username = match[1];
+          try {
+            username = decodeURIComponent(username);
+          } catch (e) {
+            // malformed escape; the lookup will just 404
+          }
+          return { view: 'profile', username: username.toLowerCase() };
+        }
+        return { view: 'tracker' };
       }
 
       function showView(view) {
-        const isLeaderboard = view === 'leaderboard';
-        trackerView.hidden = isLeaderboard;
-        leaderboardView.hidden = !isLeaderboard;
+        trackerView.hidden = view !== 'tracker';
+        leaderboardView.hidden = view !== 'leaderboard';
+        profileEditView.hidden = view !== 'profileEdit';
         viewTabs.forEach((tab) => {
           if (tab.dataset.view === view) {
             tab.setAttribute('aria-current', 'page');
@@ -1607,82 +2306,116 @@
             tab.removeAttribute('aria-current');
           }
         });
-        if (isLeaderboard && !appEl.hidden) {
+        if (view === 'leaderboard') {
           startLeaderboardPolling();
+        } else {
+          stopLeaderboardPolling();
+        }
+        if (view === 'profileEdit') openProfileEditor();
+      }
+
+      function renderRoute() {
+        const route = currentRoute();
+        const user = currentUser();
+        const isPublicProfile = route.view === 'profile';
+        profileScreen.hidden = !isPublicProfile;
+        authScreen.hidden = isPublicProfile || !!user;
+        appEl.hidden = isPublicProfile || !user;
+
+        if (isPublicProfile) {
+          stopLeaderboardPolling();
+          showPublicProfile(route.username);
+          return;
+        }
+        shownProfileUsername = null;
+        document.title = DEFAULT_TITLE;
+        if (user) {
+          showView(route.view);
         } else {
           stopLeaderboardPolling();
         }
       }
 
-      viewTabs.forEach((tab) => {
-        tab.addEventListener('click', (event) => {
-          if (event.metaKey || event.ctrlKey || event.shiftKey || event.button !== 0) return;
-          event.preventDefault();
-          if (tab.getAttribute('href') !== window.location.pathname) {
-            history.pushState(null, '', tab.getAttribute('href'));
-          }
-          showView(tab.dataset.view);
-        });
+      function navigate(path) {
+        if (path !== window.location.pathname) history.pushState(null, '', path);
+        renderRoute();
+        window.scrollTo(0, 0);
+      }
+
+      // Any <a data-route> navigates in-page; modifier clicks still open new tabs.
+      document.addEventListener('click', (event) => {
+        const link = event.target.closest('a[data-route]');
+        if (!link || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey || event.button !== 0) {
+          return;
+        }
+        event.preventDefault();
+        setUserMenuOpen(false);
+        navigate(link.getAttribute('href'));
       });
 
-      window.addEventListener('popstate', () => showView(viewFromPath()));
+      window.addEventListener('popstate', renderRoute);
 
       document.addEventListener('visibilitychange', () => {
         if (document.hidden || appEl.hidden) return;
-        const user = window.netlifyIdentity && netlifyIdentity.currentUser();
+        const user = currentUser();
         if (user) reconcileWithAccount(user);
         if (!leaderboardView.hidden) refreshLeaderboard();
       });
 
-      function showApp(user) {
-        authScreen.hidden = true;
-        appEl.hidden = false;
-        userEmailLabel.textContent = user && user.email ? user.email : '';
+      // --- Session lifecycle.
+
+      function startSession(user) {
         updateUI();
         reconcileWithAccount(user);
         startPolling(user);
-        renderNameDisplay(user);
-        closeNameEditor();
-        setNameStatus('');
-        showView(viewFromPath());
+        myProfile = null;
+        mySuggested = null;
+        renderAccountUI(user);
+        myProfileRequest = loadMyProfile(user);
+        renderRoute();
       }
 
-      function showAuthScreen() {
-        authScreen.hidden = false;
-        appEl.hidden = true;
+      function endSession() {
         stopPolling();
         stopLeaderboardPolling();
+        setUserMenuOpen(false);
         leaderboardBody.replaceChildren();
         leaderboardTable.hidden = true;
         leaderboardStatus.textContent = 'Loading…';
         leaderboardStatus.hidden = false;
+        myProfile = null;
+        mySuggested = null;
+        myProfileRequest = null;
+        renderOwnerControls();
+        renderRoute();
       }
+
+      // Render the right screen immediately (e.g. a public profile without
+      // flashing the login screen), then again once Identity restores the session.
+      renderRoute();
 
       if (window.netlifyIdentity) {
         netlifyIdentity.init({ APIUrl: NETLIFY_IDENTITY_API_URL });
 
         netlifyIdentity.on('init', (user) => {
           if (user) {
-            showApp(user);
+            startSession(user);
           } else {
-            showAuthScreen();
+            renderRoute();
           }
         });
 
         netlifyIdentity.on('login', (user) => {
-          showApp(user);
+          startSession(user);
           netlifyIdentity.close();
         });
 
-        netlifyIdentity.on('logout', () => {
-          showAuthScreen();
-        });
+        netlifyIdentity.on('logout', endSession);
 
         loginBtn.addEventListener('click', () => netlifyIdentity.open('login'));
         signupBtn.addEventListener('click', () => netlifyIdentity.open('signup'));
         logoutBtn.addEventListener('click', () => netlifyIdentity.logout());
       } else {
-        showAuthScreen();
         updateUI();
       }
     })();

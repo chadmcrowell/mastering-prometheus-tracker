@@ -17,6 +17,8 @@ Supabase-backed account so it follows you across devices/browsers.
   automatic reconciliation between local and remote state (newest `updatedAt` wins).
 - Cross-tab/cross-device sync without a manual refresh.
 - Reader leaderboard (logged-in users only) ranked by chapters completed — see [`LEADERBOARD.md`](LEADERBOARD.md).
+- Opt-in public reader profiles at `/profile/<username>` (avatar, bio, social links, progress), edited
+  from the account menu — see [`PROFILES.md`](PROFILES.md).
 - Light/dark theme, both automatic (`prefers-color-scheme`) and manually toggleable.
 
 ## Tech stack
@@ -25,8 +27,8 @@ Supabase-backed account so it follows you across devices/browsers.
   step.
 - **Auth**: [Netlify Identity](https://docs.netlify.com/manage/security/security-scanning/netlify-identity/)
   (email/password).
-- **Backend**: two Netlify Functions — `progress.js` reads/writes a user's progress, `leaderboard.js`
-  returns the rankings.
+- **Backend**: three Netlify Functions — `progress.js` reads/writes a user's progress, `leaderboard.js`
+  returns the rankings, `profile.js` reads/writes reader profiles.
 - **Database**: [Supabase](https://supabase.com/) (Postgres), accessed only from the Function via the
   service role key.
 
@@ -36,10 +38,12 @@ Supabase-backed account so it follows you across devices/browsers.
 index.html                      # entire frontend: markup, styles, and app logic
 netlify/functions/progress.js   # GET/POST endpoint for reading/writing a user's progress
 netlify/functions/leaderboard.js # GET endpoint returning the leaderboard (logged-in users only)
+netlify/functions/profile.js    # public profile lookup + the owner's profile read/upsert
 supabase/schema.sql             # reading_progress table + RLS setup, run once per Supabase project
 supabase/migrations/           # incremental schema changes, run in order after schema.sql
-netlify.toml                    # Functions directory + /leaderboard rewrite to index.html
+netlify.toml                    # Functions directory + /leaderboard and /profile/* rewrites to index.html
 LEADERBOARD.md                  # leaderboard ranking rules, data model, cohort reset
+PROFILES.md                     # profile data model, access control, avatars, extending
 package.json                    # @supabase/supabase-js dependency, used only by the Function
 mastering-prometheus-cover.jpg  # book cover, also reused as the favicon source
 favicon-light.png               # light-mode favicon variant
@@ -103,7 +107,7 @@ To enable it on a deploy:
 
 1. Create a Supabase project.
 2. Run `supabase/schema.sql` in the Supabase SQL editor to create the `reading_progress` table, then each
-   file in `supabase/migrations/` in order (currently just `001_leaderboard.sql`, for the leaderboard).
+   file in `supabase/migrations/` in order (`001_leaderboard.sql`, then `002_profiles.sql`).
 3. In the Netlify site's dashboard, set these environment variables:
    - `SUPABASE_URL` — the project's API URL.
    - `SUPABASE_SERVICE_ROLE_KEY` — the project's **secret**/**service_role** key (labeled "Secret key" in
@@ -143,7 +147,11 @@ curl -s https://mastering-prometheus-tracker.netlify.app/ | grep <marker>
 # Functions: each should return 401 with this body once the deploy is live and reachable
 curl -s https://mastering-prometheus-tracker.netlify.app/.netlify/functions/progress
 curl -s https://mastering-prometheus-tracker.netlify.app/.netlify/functions/leaderboard
+curl -s 'https://mastering-prometheus-tracker.netlify.app/.netlify/functions/profile?me=1'
 # {"error":"Not authenticated"}
+# The public profile lookup needs no login, so an unknown username returns 404 instead:
+curl -s 'https://mastering-prometheus-tracker.netlify.app/.netlify/functions/profile?username=nobody-here'
+# {"error":"Profile not found"}
 ```
 
 A bare `curl` to the Function has no Identity JWT attached, so the 401 only confirms the deploy succeeded —

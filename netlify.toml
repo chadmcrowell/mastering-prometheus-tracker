@@ -6,3 +6,9 @@
   from = "/leaderboard"
   to = "/index.html"
   status = 200
+
+# /profile/edit and /profile/:username are views inside index.html too.
+[[redirects]]
+  from = "/profile/*"
+  to = "/index.html"
+  status = 200
