@@ -38,10 +38,32 @@ leaderboard (view): rank, user_id, display_name, chapters_completed, reached_at
 - **`leaderboard`** is a plain view that aggregates `chapter_completions` per user. It's declared
   `security_invoker`, and `anon`/`authenticated` have no grants on it, so it's unreachable through
   Supabase's public REST API.
-- **`display_name`** comes from the Netlify Identity JWT (`user_metadata.full_name`, the "Name" field
-  on the signup form). The `progress` Function writes it on every POST. If it's empty, the leaderboard
-  Function shows a stable pseudonym, `Reader #<first 4 hex of sha256(user_id)>`. **Emails and Identity
-  user ids are never sent to the browser.**
+- **`display_name`** is a copy of the Netlify Identity user's `user_metadata.full_name` (the "Name"
+  field on the signup form), which is the single source of truth. The `progress` Function copies it from
+  the JWT on every POST, and on `PATCH` (see [Editing your name](#editing-your-name)). If it's empty, the
+  leaderboard Function shows a stable pseudonym, `Reader #<first 4 hex of sha256(user_id)>`. **Emails
+  and Identity user ids are never sent to the browser.**
+
+### Editing your name
+
+The Leaderboard view has a **Shown as … / Edit name** control. Saving:
+
+1. Calls the Identity widget's `user.update({ data: { full_name } })`, updating Identity metadata.
+2. Forces a token refresh (`user.jwt(true)`), so the next JWT carries the new name.
+3. Sends `PATCH /.netlify/functions/progress` with no body. The Function copies the name from the JWT
+   into `reading_progress.display_name`. It deliberately doesn't re-POST progress, which could overwrite
+   newer progress saved from another device.
+
+Saving a blank name makes the reader anonymous (`Reader #xxxx`). Readers can also set `full_name`
+directly through the Identity API, so the Function sanitizes it rather than trusting it:
+
+- strips control characters and bidi override/isolate characters, which can visually reverse text to
+  spoof another reader's name
+- collapses whitespace
+- caps the name at 40 code points
+
+Names are also rendered with `textContent`, never `innerHTML`. Duplicate names are allowed, since
+readers are identified by rank, not name.
 
 ### Access path
 
@@ -78,8 +100,8 @@ Backfill caveat: per-chapter completion times were never recorded before this fe
 readers' chapters all get their row's last `updated_at` (clamped to `now()`), so ties among pre-existing
 readers are approximate.
 
-Display names only update when a reader next toggles a chapter (that's when the `progress` Function
-POSTs). Until then, existing readers appear as `Reader #xxxx`.
+Existing readers appear as `Reader #xxxx` until they toggle a chapter or save a name with the
+Edit name control.
 
 ## Changing the number of chapters
 

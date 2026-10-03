@@ -512,7 +512,8 @@
       color: var(--color-text-muted);
     }
 
-    .logout-button {
+    .logout-button,
+    .secondary-button {
       padding: 0.3rem 0.8rem;
       border-radius: var(--radius-full);
       border: 1px solid var(--color-divider);
@@ -526,7 +527,8 @@
       transition: background var(--transition-interactive), color var(--transition-interactive);
     }
 
-    .logout-button:hover {
+    .logout-button:hover,
+    .secondary-button:hover {
       background: var(--color-surface-offset);
       color: var(--color-text);
     }
@@ -580,6 +582,71 @@
 
     .leaderboard-intro h2 {
       font-size: 1.1rem;
+    }
+
+    .name-editor {
+      margin-bottom: var(--space-4);
+      padding: var(--space-3) var(--space-4);
+      background: var(--color-surface-2);
+      border: 1px solid var(--color-divider);
+      border-radius: var(--radius-md);
+      font-size: 0.9rem;
+    }
+
+    .name-display,
+    .name-form-row {
+      display: flex;
+      align-items: center;
+      gap: var(--space-2);
+    }
+
+    .name-display .name-value {
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .name-display .name-value.is-anonymous {
+      font-weight: 400;
+      font-style: italic;
+      color: var(--color-text-muted);
+    }
+
+    .name-form label {
+      display: block;
+      margin-bottom: var(--space-1);
+      font-size: 0.8rem;
+      color: var(--color-text-muted);
+    }
+
+    .name-input {
+      flex: 1;
+      min-width: 0;
+      padding: 0.35rem 0.75rem;
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-full);
+      background: var(--color-surface);
+      color: var(--color-text);
+      font: inherit;
+      font-size: 0.9rem;
+    }
+
+    .name-input:focus {
+      outline: 2px solid var(--color-primary);
+      outline-offset: 1px;
+    }
+
+    .name-form .chapter-button:disabled {
+      opacity: 0.6;
+      cursor: progress;
+    }
+
+    .name-hint,
+    .name-status {
+      margin-top: var(--space-1);
+      font-size: 0.8rem;
+      color: var(--color-text-muted);
     }
 
     .leaderboard-status {
@@ -1032,6 +1099,23 @@
         <h2>Leaderboard</h2>
         <p class="meta">Ranked by chapters completed · ties go to whoever got there first</p>
       </div>
+      <div class="name-editor">
+        <div class="name-display" id="nameDisplay">
+          <span class="meta">Shown as</span>
+          <strong class="name-value" id="nameValue"></strong>
+          <button class="secondary-button" type="button" id="nameEditBtn">Edit name</button>
+        </div>
+        <form class="name-form" id="nameForm" hidden>
+          <label for="nameInput">Leaderboard name</label>
+          <div class="name-form-row">
+            <input class="name-input" id="nameInput" type="text" maxlength="40" autocomplete="nickname" />
+            <button class="chapter-button" type="submit" id="nameSaveBtn">Save</button>
+            <button class="secondary-button" type="button" id="nameCancelBtn">Cancel</button>
+          </div>
+          <p class="name-hint">Visible to all logged-in readers. Leave blank to appear anonymously.</p>
+        </form>
+        <p class="name-status" id="nameStatus" role="status" hidden></p>
+      </div>
       <p class="leaderboard-status" id="leaderboardStatus">Loading…</p>
       <table class="leaderboard-table" id="leaderboardTable" hidden>
         <thead>
@@ -1066,6 +1150,14 @@
       const leaderboardTable = document.getElementById('leaderboardTable');
       const leaderboardBody = document.getElementById('leaderboardBody');
       const viewTabs = Array.from(document.querySelectorAll('.view-tab'));
+      const nameDisplay = document.getElementById('nameDisplay');
+      const nameValue = document.getElementById('nameValue');
+      const nameEditBtn = document.getElementById('nameEditBtn');
+      const nameForm = document.getElementById('nameForm');
+      const nameInput = document.getElementById('nameInput');
+      const nameSaveBtn = document.getElementById('nameSaveBtn');
+      const nameCancelBtn = document.getElementById('nameCancelBtn');
+      const nameStatus = document.getElementById('nameStatus');
       const themeToggles = [
         document.getElementById('themeToggleAuth'),
         document.getElementById('themeToggleApp'),
@@ -1426,6 +1518,80 @@
         }
       }
 
+      // The leaderboard name lives in the Netlify Identity user's
+      // user_metadata.full_name (the signup form's "Name" field), so there's a
+      // single source of truth. The progress Function copies it into Supabase,
+      // sanitizing it on the way, for the leaderboard to read.
+      function currentDisplayName(user) {
+        const name = user && user.user_metadata && user.user_metadata.full_name;
+        return typeof name === 'string' ? name.replace(/\s+/g, ' ').trim() : '';
+      }
+
+      function renderNameDisplay(user) {
+        const name = currentDisplayName(user);
+        nameValue.textContent = name || 'Anonymous reader';
+        nameValue.title = name;
+        nameValue.classList.toggle('is-anonymous', !name);
+      }
+
+      function setNameStatus(message) {
+        nameStatus.textContent = message;
+        nameStatus.hidden = !message;
+      }
+
+      function openNameEditor() {
+        const user = window.netlifyIdentity && netlifyIdentity.currentUser();
+        nameInput.value = currentDisplayName(user);
+        setNameStatus('');
+        nameDisplay.hidden = true;
+        nameForm.hidden = false;
+        nameInput.focus();
+        nameInput.select();
+      }
+
+      function closeNameEditor() {
+        nameForm.hidden = true;
+        nameDisplay.hidden = false;
+      }
+
+      async function saveDisplayName(name) {
+        const user = window.netlifyIdentity && netlifyIdentity.currentUser();
+        if (!user) return;
+        const updatedUser = await user.update({ data: { full_name: name } });
+        // Force a token refresh so the JWT the Function reads carries the new name.
+        const token = await updatedUser.jwt(true);
+        const res = await fetch(PROGRESS_ENDPOINT, {
+          method: 'PATCH',
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (!res.ok) throw new Error(`Saving display name failed with ${res.status}`);
+        renderNameDisplay(updatedUser);
+      }
+
+      nameEditBtn.addEventListener('click', openNameEditor);
+      nameCancelBtn.addEventListener('click', closeNameEditor);
+      nameForm.addEventListener('keydown', (event) => {
+        if (event.key === 'Escape') closeNameEditor();
+      });
+
+      nameForm.addEventListener('submit', async (event) => {
+        event.preventDefault();
+        const name = nameInput.value.replace(/\s+/g, ' ').trim();
+        nameSaveBtn.disabled = true;
+        setNameStatus('Saving…');
+        try {
+          await saveDisplayName(name);
+          closeNameEditor();
+          setNameStatus('');
+          refreshLeaderboard();
+        } catch (err) {
+          console.error('Failed to save display name', err);
+          setNameStatus('Couldn’t save your name. Try again in a moment.');
+        } finally {
+          nameSaveBtn.disabled = false;
+        }
+      });
+
       function viewFromPath() {
         return window.location.pathname.replace(/\/+$/, '') === '/leaderboard' ? 'leaderboard' : 'tracker';
       }
@@ -1475,6 +1641,9 @@
         updateUI();
         reconcileWithAccount(user);
         startPolling(user);
+        renderNameDisplay(user);
+        closeNameEditor();
+        setNameStatus('');
         showView(viewFromPath());
       }
 
